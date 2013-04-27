@@ -1,4 +1,9 @@
 class Environment
+    # @asteroids holds on to all asteroids, what turn they
+    # showed up in, and what turn they "disappear" in. From this,
+    # we can extrapolate asteroids positions -- this is the
+    # asteroid-state-environment discussed in paper.
+
     constructor: () ->
         @asteroids = []
         # Turn is raw turn count (number of player turns, for instance)
@@ -28,13 +33,13 @@ class Environment
 
     bumpMove: () ->
         if not @playerMove
-            # Remove any asteroids whose last turn was over 20 turns ago
-            # TODO: check this works precisely as intended
-            @asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
             # End this turn, increment counter to next
             @turn += 1
+            # Remove any asteroids whose last turn was over 20 turns ago
+            @asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
         else
             # TODO: implement player turns
+            # Probably by passing an algorithm-object?
         @playerMove = not @playerMove
 
     class AsteroidWrapper
