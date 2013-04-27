@@ -2,7 +2,9 @@ module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
 
-        clean: ["public"],
+        clean: {
+            public: ["public"]
+        },
 
         coffee: {
             options: {
@@ -31,7 +33,7 @@ module.exports = function(grunt) {
                 removeComments: true,
                 collapseWhitespace: true
             },
-            rocksinspace: {
+            all: {
                 files: {
                     "public/index.html": "index.html"
                 }
@@ -39,7 +41,7 @@ module.exports = function(grunt) {
         },
 
         copy: {
-            deploy: {
+            deploy_assets: {
                 files: [
                     {flatten: true, expand: true, src: ['assets/*'], dest: 'public/assets/'}
                 ]
