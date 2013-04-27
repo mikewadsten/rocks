@@ -16,7 +16,7 @@ class Ship
             else 0x0  # probably not gonna happen
 
     move: (direction) ->
-        byte = @dirtobyte direction
+        byte = Ship.dirtobyte direction
         if byte in [0x1, 0x7, 0x8] and @xpos > 0
             @xpos -= 1
         if byte in [0x3, 0x4, 0x5] and @xpos < @gridwidth
@@ -29,7 +29,7 @@ class Ship
         @_addhistory byte
         return this
 
-    @_addhistory: (byte) ->
+    _addhistory: (byte) ->
         # Keep history to 50 moves. For rationality reasons.
         if @_history.length >= 50
             @_history.shift()

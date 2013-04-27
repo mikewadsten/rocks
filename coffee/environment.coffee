@@ -12,6 +12,7 @@ class Environment
         @playerMove = yes
         @gridWidth = 200
         @gridHeight = 200
+        @ship = new Ship(100, 100, @gridWidth, @gridHeight)
 
     addAsteroid: (xpos, ypos, vx, vy) ->
         ast = new Asteroid(xpos, ypos, vx, vy)
