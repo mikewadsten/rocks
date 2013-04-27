@@ -37,3 +37,5 @@ class Ship
 
     # Maybe not the best idea. But eh...
     gethistory: () -> @_history
+
+window.Ship = Ship

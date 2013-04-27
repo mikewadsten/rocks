@@ -29,4 +29,6 @@
 
   })();
 
+  window.Asteroid = Asteroid;
+
 }).call(this);

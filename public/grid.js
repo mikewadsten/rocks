@@ -7,16 +7,16 @@
     function Grid(width, height) {
       this.width = width;
       this.height = height;
-      this._nodes = this._makenodes();
+      this._nodes = Grid._makenodes(this.width, this.height);
     }
 
-    Grid._makenodes = function() {
-      var i, j, nodes, _i, _j, _ref, _ref1;
+    Grid._makenodes = function(width, height) {
+      var nodes, x, y, _i, _j, _ref, _ref1;
       nodes = [];
-      for (i = _i = 0, _ref = this.width; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
-        nodes[i] = [];
-        for (j = _j = 0, _ref1 = this.height; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
-          nodes[i][j] = new Node(x, y);
+      for (x = _i = 0, _ref = width - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; x = 0 <= _ref ? ++_i : --_i) {
+        nodes[x] = [];
+        for (y = _j = 0, _ref1 = height - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; y = 0 <= _ref1 ? ++_j : --_j) {
+          nodes[x][y] = new Node(x, y);
         }
       }
       return nodes;
@@ -31,15 +31,17 @@
     };
 
     Grid.prototype.occupied = function(x, y) {
-      return this.getnode(x, y).occupied;
+      return getnode(x, y).occupied;
     };
 
     Grid.prototype.unsafe = function(x, y) {
-      return this.occupied(x - 1, y + 1) || this.occupied(x, y + 1) || this.occupied(x + 1, y + 1) || this.occupied(x - 1, y) || this.occupied(x, y) || this.occupied(x + 1, y) || this.occupied(x - 1, y - 1) || this.occupied(x, y - 1) || this.occupied(x + 1, y - 1);
+      return occupied(x - 1, y + 1) || occupied(x, y + 1) || occupied(x + 1, y + 1) || occupied(x - 1, y) || occupied(x, y) || occupied(x + 1, y) || occupied(x - 1, y - 1) || occupied(x, y - 1) || occupied(x + 1, y - 1);
     };
 
     return Grid;
 
   })();
+
+  window.Grid = Grid;
 
 }).call(this);

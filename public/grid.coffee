@@ -1,13 +1,13 @@
 class Grid
     constructor: (@width, @height) ->
-        @_nodes = @_makenodes()
+        @_nodes = Grid._makenodes(@width, @height)
 
-    @_makenodes: () ->
+    @_makenodes: (width, height) ->
         nodes = []
-        for i in [0..@width]
-            nodes[i] = []
-            for j in [0..@height]
-                nodes[i][j] = new Node(x, y)
+        for x in [0..width-1]
+            nodes[x] = []
+            for y in [0..height-1]
+                nodes[x][y] = new Node(x, y)
         nodes
 
     getnode: (x, y) ->
@@ -18,9 +18,11 @@ class Grid
         else new Node(x, y)
 
     occupied: (x, y) ->
-        @getnode(x, y).occupied
+        getnode(x, y).occupied
 
     unsafe: (x, y) ->
-        @occupied(x-1, y+1) or @occupied(x, y+1) or @occupied(x+1, y+1) or
-        @occupied(x-1, y)   or @occupied(x, y)   or @occupied(x+1, y)   or
-        @occupied(x-1, y-1) or @occupied(x, y-1) or @occupied(x+1, y-1)
+        occupied(x-1, y+1) or occupied(x, y+1) or occupied(x+1, y+1) or
+        occupied(x-1, y)   or occupied(x, y)   or occupied(x+1, y)   or
+        occupied(x-1, y-1) or occupied(x, y-1) or occupied(x+1, y-1)
+
+window.Grid = Grid

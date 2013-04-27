@@ -10,3 +10,5 @@ class Asteroid
         new Asteroid(@xpos + (@xvel*turns),
                      @ypos + (@yvel*turns),
                      @xvel, @yvel)
+
+window.Asteroid = Asteroid

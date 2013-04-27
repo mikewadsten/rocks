@@ -14,4 +14,6 @@
 
   })();
 
+  window.Node = Node;
+
 }).call(this);
