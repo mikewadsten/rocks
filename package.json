@@ -1,0 +1,22 @@
+{
+  "name": "rocks-in-space",
+  "version": "0.0.1",
+  "description": "4511W Final Project game",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.umn.edu:wadst007/4511w"
+  },
+  "author": "Mike Wadsten",
+  "license": "BSD",
+  "gitHead": "fbbfafd7e60ea75c97db6a1bfbf406d179adbb2e",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-coffee": "~0.7.0",
+    "grunt-contrib-uglify": "~0.2.0"
+  }
+}
