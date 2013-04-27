@@ -3,7 +3,7 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON('package.json'),
 
         clean: {
-            public: ["public"]
+            public: ["public", "assets/rocksinspace*"]
         },
 
         coffee: {
@@ -24,7 +24,7 @@ module.exports = function(grunt) {
                 }
             },
             rocksinspace: {
-                files: {'public/assets/rocksinspace.min.js': ['coffee/rocksinspace.js']}
+                files: {'assets/rocksinspace.min.js': ['coffee/rocksinspace.js']}
             }
         },
 
