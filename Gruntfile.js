@@ -2,6 +2,8 @@ module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
 
+        clean: ["public/assets/rocksinspace.*"],
+
         coffee: {
             joined: {
                 options: {join: true},
@@ -25,6 +27,11 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks('grunt-contrib-coffee');
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-clean');
 
-    grunt.registerTask('default', ['coffee', 'uglify']);
+    grunt.registerTask('default', "My default task.", function() {
+        grunt.log.writeln("Generating rocksinspace.min.js using Coffeescript and uglify...");
+        grunt.task.run('clean');
+        grunt.task.run(['coffee', 'uglify']);
+    });
 }
