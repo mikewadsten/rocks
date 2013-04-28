@@ -1,0 +1,9 @@
+body {
+    background-color: #aaa;
+    font-family: Arial;
+}
+
+#contents {
+    width: 1000px;
+    margin: 0 auto;
+}

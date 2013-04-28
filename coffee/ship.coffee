@@ -17,15 +17,16 @@ class Ship
 
     move: (direction) ->
         byte = Ship.dirtobyte direction
+        console.log "Ship moved... " + byte
         if byte in [0x1, 0x7, 0x8] and @xpos > 0
             @xpos -= 1
         if byte in [0x3, 0x4, 0x5] and @xpos < @gridwidth
             @xpos += 1
+        # Raphael is flipped: add to ypos for "down"
         if byte in [0x5, 0x6, 0x7] and @ypos > 0
-            @ypos -= 1
-        if byte in [0x1, 0x2, 0x3] and @ypos < @gridheight
             @ypos += 1
-        console.log "Ship moved... " + byte
+        if byte in [0x1, 0x2, 0x3] and @ypos < @gridheight
+            @ypos -= 1
         @_addhistory byte
         return this
 

@@ -1,4 +1,8 @@
 module.exports = function(grunt) {
+    ugly_exceptions = [
+        "Asteroid", "AsteroidWrapper", "Environment", "Grid", "LandingZone", "Node",
+        "Ship", "ShipWrapper", "VAsteroid", "VShip"]
+
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
 
@@ -20,7 +24,7 @@ module.exports = function(grunt) {
         uglify: {
             options: {
                 mangle: {
-                    except: ['Asteroid', 'AsteroidWrapper', 'Environment', 'Grid', 'Node', 'Ship']
+                    except: ugly_exceptions
                 }
             },
             rocksinspace: {
@@ -40,6 +44,13 @@ module.exports = function(grunt) {
             }
         },
 
+        cssmin: {
+            styles: {
+                options: {report: 'min'},
+                files: {'public/assets/style.min.css': ['style.css']}
+            }
+        },
+
         copy: {
             deploy_assets: {
                 files: [
@@ -53,6 +64,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-coffee');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-htmlmin');
+    grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-copy');
 
     grunt.registerTask('default', "My default task.", function() {
@@ -61,6 +73,7 @@ module.exports = function(grunt) {
         grunt.task.run(['coffee', 'uglify']);
         grunt.log.writeln("Generating minified HTML files...");
         grunt.task.run('htmlmin');
+        grunt.task.run('cssmin');
         grunt.task.run('copy');
     });
 }

@@ -4,17 +4,19 @@ class Environment
     # we can extrapolate asteroids positions -- this is the
     # asteroid-state-environment discussed in paper.
 
-    constructor: () ->
+    constructor: (@raphael) ->
         @asteroids = []
         # Turn is raw turn count (number of player turns, for instance)
         @turn = 0
         # tells whose move it is
         @playerMove = yes
-        @gridWidth = 200
-        @gridHeight = 200
-        @ship = new Ship(100, 100, @gridWidth, @gridHeight)
+        # TODO: figure out values for these
+        @gridWidth = 100
+        @gridHeight = 60
+        @ship = new ShipWrapper(@raphael, new Ship(50, 30, @gridWidth, @gridHeight))
+        #@ship = new Ship(100, 100, @gridWidth, @gridHeight)
 
-    addAsteroid: (xpos, ypos, vx, vy) ->
+    addAsteroid: (xpos, ypos, vx=1, vy=1) ->
         ast = new Asteroid(xpos, ypos, vx, vy)
         remturnsX = 0
         remturnsY = 0
@@ -29,7 +31,9 @@ class Environment
         if vy > 0
             remturnsY = Math.ceil((@gridHeight - ypos) / vy)
         remainingTurns = Math.min(remturnsX, remturnsY)
-        wrapper = new AsteroidWrapper(ast, @turn, @turn + remainingTurns)
+
+        #view = new VAsteroid(@raphael, xpos, ypos)
+        wrapper = new AsteroidWrapper(@raphael, ast, @turn, @turn + remainingTurns)
         @asteroids.push wrapper
 
     bumpMove: () ->
@@ -38,12 +42,65 @@ class Environment
             @turn += 1
             # Remove any asteroids whose last turn was over 20 turns ago
             @asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
+            # "Hide" any asteroids who shouldn't be on screen
+            for ast in @asteroids
+                ast.moveOrHide(@turn)
         else
             # TODO: implement player turns
             # Probably by passing an algorithm-object?
+            # Random walk
+            # TODO: Can probably do this better, i.e. floor(num * 10)
+            num = Math.random()
+            if num < 0.111
+                @ship.move "s"
+            else if num < 0.222
+                @ship.move "ul"
+            else if num < 0.333
+                @ship.move "up"
+            else if num < 0.444
+                @ship.move "ur"
+            else if num < 0.555
+                @ship.move "r"
+            else if num < 0.666
+                @ship.move "dr"
+            else if num < 0.777
+                @ship.move "d"
+            else if num < 0.888
+                @ship.move "dl"
+            else
+                @ship.move "l"
+
         @playerMove = not @playerMove
 
+    isShipSafe: () ->
+        xpos = @ship.ship.xpos
+        ypos = @ship.ship.ypos
+        for ast in @asteroids
+            if ast.covers(xpos, ypos)
+                console.log "An asteroid covers the ship?"
+                return false
+        return true
+
+    class ShipWrapper
+        constructor: (raphael, @ship) ->
+            @view = new VShip(raphael, @ship.xpos, @ship.ypos)
+
+        move: (direction) ->
+            @ship.move direction
+            @view.moveTo(@ship.xpos, @ship.ypos)
+
     class AsteroidWrapper
-        constructor: (@asteroid, @initialturn, @lastTurn) ->
+        constructor: (raphael, @asteroid, @initialturn, @lastTurn) ->
+            @view = new VAsteroid(raphael, @asteroid.xpos, @asteroid.ypos)
+
+        covers: (x, y) ->
+            @asteroid.covers x,y
+
+        moveOrHide: (currturn) ->
+            if currturn >= @lastTurn
+                @view.view.hide()
+            else
+                nextpos = @asteroid.move(currturn - @initialturn)
+                @view.animateTo(nextpos.xpos, nextpos.ypos)
 
 window.Environment = Environment
