@@ -88,7 +88,7 @@ class Environment
 
         move: (direction) ->
             @ship.move direction
-            @view.moveTo(@ship.xpos, @ship.ypos)
+            @view.moveTo(@ship.xpos, @ship.ypos, 100)
 
         animateExplode: () ->
             initattr =
@@ -123,6 +123,6 @@ class Environment
                 @view.view.hide()
             else
                 nextpos = @asteroid.move(currturn - @initialturn)
-                @view.animateTo(nextpos.xpos, nextpos.ypos)
+                @view.animateTo(nextpos.xpos, nextpos.ypos, 100)
 
 window.Environment = Environment

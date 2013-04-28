@@ -1,4 +1,5 @@
 class Ship
+    CELLS = 1
     constructor: (@xpos, @ypos, @gridwidth, @gridheight) ->
         @_history = []
 
@@ -18,15 +19,26 @@ class Ship
     move: (direction) ->
         byte = Ship.dirtobyte direction
         console.log "Ship moved... " + byte
-        if byte in [0x1, 0x7, 0x8] and @xpos > 0
+        if byte in [0x1, 0x7, 0x8]
             @xpos -= 1
-        if byte in [0x3, 0x4, 0x5] and @xpos < @gridwidth
+        else if byte in [0x3, 0x4, 0x5]
             @xpos += 1
         # Raphael is flipped: add to ypos for "down"
-        if byte in [0x5, 0x6, 0x7] and @ypos > 0
+        if byte in [0x5, 0x6, 0x7]
             @ypos += 1
-        if byte in [0x1, 0x2, 0x3] and @ypos < @gridheight
+        else if byte in [0x1, 0x2, 0x3]
             @ypos -= 1
+
+        # Ensure ship is still in screen.
+        if @xpos < 0
+            @xpos = 0
+        else if @xpos > @gridwidth - CELLS
+            @xpos = @gridwidth - CELLS
+        if @ypos < 0
+            @ypos = 0
+        else if @ypos > @gridheight - CELLS
+            @ypos = @gridheight - CELLS
+
         @_addhistory byte
         return this
 
