@@ -12,8 +12,7 @@ class Asteroid
         0 <= xdiff <= 2 and 0 <= ydiff <= 2
 
     move: (turns = 1) ->
-        new Asteroid(@xpos + (@xvel*turns),
-                     @ypos + (@yvel*turns),
+        new Asteroid(@xpos + (@xvel*turns), @ypos + (@yvel*turns),
                      @xvel, @yvel)
 
 window.Asteroid = Asteroid

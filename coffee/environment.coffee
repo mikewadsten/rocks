@@ -10,11 +10,10 @@ class Environment
         @turn = 0
         # tells whose move it is
         @playerMove = yes
-        # TODO: figure out values for these
         @gridWidth = 100
         @gridHeight = 60
-        @ship = new ShipWrapper(@raphael, new Ship(50, 30, @gridWidth, @gridHeight))
-        #@ship = new Ship(100, 100, @gridWidth, @gridHeight)
+        theship = new Ship(@gridWidth/2, @gridHeight/2, @gridWidth, @gridHeight)
+        @ship = new ShipWrapper(@raphael, theship)
 
     addAsteroid: (xpos, ypos, vx=1, vy=1) ->
         ast = new Asteroid(xpos, ypos, vx, vy)
@@ -32,7 +31,6 @@ class Environment
             remturnsY = Math.ceil((@gridHeight - ypos) / vy)
         remainingTurns = Math.min(remturnsX, remturnsY)
 
-        #view = new VAsteroid(@raphael, xpos, ypos)
         wrapper = new AsteroidWrapper(@raphael, ast, @turn, @turn + remainingTurns)
         @asteroids.push wrapper
 
@@ -49,26 +47,17 @@ class Environment
             # TODO: implement player turns
             # Probably by passing an algorithm-object?
             # Random walk
-            # TODO: Can probably do this better, i.e. floor(num * 10)
-            num = Math.random()
-            if num < 0.111
-                @ship.move "s"
-            else if num < 0.222
-                @ship.move "ul"
-            else if num < 0.333
-                @ship.move "up"
-            else if num < 0.444
-                @ship.move "ur"
-            else if num < 0.555
-                @ship.move "r"
-            else if num < 0.666
-                @ship.move "dr"
-            else if num < 0.777
-                @ship.move "d"
-            else if num < 0.888
-                @ship.move "dl"
-            else
-                @ship.move "l"
+            num = Math.floor (Math.random() * 9)
+            switch num
+                when 0 then "s"
+                when 1 then "ul"
+                when 2 then "up"
+                when 3 then "ur"
+                when 4 then "r"
+                when 5 then "dr"
+                when 6 then "d"
+                when 7 then "dl"
+                else "l"
 
         @playerMove = not @playerMove
 
@@ -109,7 +98,7 @@ class Environment
                     r: 130
 
             @exploder.attr initattr
-            @exploder.animate animation, 2000
+            @exploder.animate animation, 1000
 
     class AsteroidWrapper
         constructor: (raphael, @asteroid, @initialturn, @lastTurn) ->
