@@ -26,3 +26,4 @@ class ViewShip
 
 window.VAsteroid = ViewAsteroid
 window.VShip = ViewShip
+window.PX_PER_CELL = PX_PER_CELL

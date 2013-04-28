@@ -84,10 +84,32 @@ class Environment
     class ShipWrapper
         constructor: (raphael, @ship) ->
             @view = new VShip(raphael, @ship.xpos, @ship.ypos)
+            @exploder = raphael.circle(@ship.xpos, @ship.ypos, 0).attr({"fill-opacity": 0, r:0})
 
         move: (direction) ->
             @ship.move direction
             @view.moveTo(@ship.xpos, @ship.ypos)
+
+        animateExplode: () ->
+            initattr =
+                cx: (@ship.xpos * PX_PER_CELL) + 5
+                cy: (@ship.ypos * PX_PER_CELL) + 5
+                r: 0
+                "fill-opacity": 1
+                "stroke-opacity": 0
+            animation =
+                "40%":
+                    fill: "#ff6600"
+                    r: 70
+                "60%":
+                    fill: "#dd0000"
+                    r: 100
+                "100%":
+                    "fill-opacity": 0
+                    r: 130
+
+            @exploder.attr initattr
+            @exploder.animate animation, 2000
 
     class AsteroidWrapper
         constructor: (raphael, @asteroid, @initialturn, @lastTurn) ->
