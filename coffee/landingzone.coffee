@@ -8,3 +8,4 @@ class LandingZone
         turn >= @expireTurn
 
 window.LandingZone = LandingZone
+window.LZ_TURNS_TO_EXPIRE = 50

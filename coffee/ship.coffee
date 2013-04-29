@@ -3,6 +3,9 @@ class Ship
     constructor: (@xpos, @ypos, @gridwidth, @gridheight) ->
         @_history = []
 
+    at: (x, y) ->
+        @xpos == x and @ypos == y
+
     @dirtobyte: (direction) ->
         switch direction
             when "s" then 0x0

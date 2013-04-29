@@ -1,6 +1,6 @@
 module.exports = function(grunt) {
     ugly_exceptions = [
-        "Asteroid", "AsteroidWrapper", "Environment", "Grid", "LandingZone", "Node",
+        "Asteroid", "AsteroidWrapper", "Environment", "Grid", "LandingZone", "LZWrapper", "Node",
         "Ship", "ShipWrapper", "VAsteroid", "VShip"]
 
     grunt.initConfig({
