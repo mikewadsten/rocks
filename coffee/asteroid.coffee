@@ -11,6 +11,12 @@ class Asteroid
         ydiff = y - (@ypos + (turns * @yvel))
         0 <= xdiff <= 2 and 0 <= ydiff <= 2
 
+    willCoverWithin: (x, y, turns) ->
+        for i in [0..turns]
+            if @willCover(x, y, i)
+                return true
+        return false
+
     move: (turns = 1) ->
         new Asteroid(@xpos + (@xvel*turns), @ypos + (@yvel*turns),
                      @xvel, @yvel)

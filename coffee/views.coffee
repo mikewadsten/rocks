@@ -11,6 +11,7 @@ class ViewAsteroid
         @view.attr({fill: "#aaa", "fill-opacity": 0.5})
 
     animateTo: (x, y, time=1000) ->
+        @view.toFront()
         @view.stop().animate({x: x*PX_PER_CELL, y: y*PX_PER_CELL}, time)
 
 class ViewShip
@@ -37,9 +38,36 @@ class ViewLZ
         @ypos = y * PX_PER_CELL
         # green
         @view = @raphael.rect(@xpos, @ypos, dimen, dimen).attr({fill: "#009900"})
+        @notifyText = @raphael.text(@xpos, @ypos, "")
+        inittext =
+            fill: "#fff"
+            "font-size": 18
+            "fill-opacity": 0
+        @notifyText.attr(inittext)
+
+    notify: (turn) ->
+        text = "WHAAAA"
+        if turn is @firstTurn
+            text = "Hey, over here!"
+        else if @turnsLeft(turn) % 10 is 0
+            text = (@turnsLeft turn) + "!"
+        else
+            return false
+        @notifyText.attr({"fill-opacity": 1})
+        @notifyText.attr({x: @xpos, y: @ypos, text: text})
+        @notifyText.animate({y: @ypos - 50, "fill-opacity": 0}, 500)
 
     setPos: (x, y) ->
-        @view.attr({x: x*PX_PER_CELL, y: y*PX_PER_CELL})
+        @xpos = x * PX_PER_CELL
+        @ypos = y * PX_PER_CELL
+        locattrs =
+            x: @xpos
+            y: @ypos
+        @view.attr locattrs
+        @notifyText.attr locattrs
+
+    turnsLeft: (turn) ->
+        (@firstTurn + LZ_TURNS_TO_EXPIRE) - turn
 
     expired: (turn) ->
         turn >= @firstTurn + LZ_TURNS_TO_EXPIRE

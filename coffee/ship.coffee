@@ -21,7 +21,7 @@ class Ship
 
     move: (direction) ->
         byte = Ship.dirtobyte direction
-        console.log "Ship moved... " + byte
+        #console.log "Ship moved... " + byte
         if byte in [0x1, 0x7, 0x8]
             @xpos -= 1
         else if byte in [0x3, 0x4, 0x5]

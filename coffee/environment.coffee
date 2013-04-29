@@ -71,7 +71,8 @@ class Environment
             @landingZone = new LZWrapper(@raphael, @turn)
 
     startLoop: (fun) ->
-        @runloop = setInterval(fun, 125)
+        INTERVAL = 100
+        @runloop = setInterval(fun, INTERVAL)
 
     stopLoop: () ->
         if @runloop then clearInterval(@runloop)
@@ -83,6 +84,7 @@ class Environment
             # Respawn landign zone if needed
             if @landingZone.expired @turn
                 @landingZone.respawn @turn
+            @landingZone.view.notify @turn
             # Remove any asteroids whose last turn was over 20 turns ago
             @asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
             # "Hide" any asteroids who shouldn't be on screen
@@ -93,21 +95,40 @@ class Environment
             # TODO: implement player turns
             # Probably by passing an algorithm-object?
             # Random walk
-            num = Math.floor (Math.random() * 9)
-            dir = switch num
-                when 0 then "s"
-                when 1 then "ul"
-                when 2 then "up"
-                when 3 then "ur"
-                when 4 then "r"
-                when 5 then "dr"
-                when 6 then "d"
-                when 7 then "dl"
-                else "l"
-            @ship.move dir
+            if @atLandingZone()
+                @lzpoints += 1
+                @landingZone.respawn @turn
+
+            if @isShipSafeLA()
+                @ship.view.view.attr('fill', "#fff")
+            else
+                @ship.view.view.attr({fill: "#d00"})
+                #num = Math.floor (Math.random() * 9)
+                num = Math.floor (Math.random() * 8)
+                dir = switch num
+                    #when 0 then "s"
+                    when 0 then "ul"
+                    when 1 then "up"
+                    when 2 then "ur"
+                    when 3 then "r"
+                    when 4 then "dr"
+                    when 5 then "d"
+                    when 6 then "dl"
+                    else "l"
+                @ship.move dir
 
         @playerMove = not @playerMove
         @updateText()
+
+    isShipSafeLA: () ->
+        xpos = @ship.ship.xpos
+        ypos = @ship.ship.ypos
+        for ast in @asteroids
+            moveturns = @turn - ast.initialturn
+            if ast.asteroid.move(moveturns).willCoverWithin(xpos, ypos, 2)
+                console.log "ship won't be safe within 2 turns"
+                return false
+        return true
 
     isShipSafe: () ->
         xpos = @ship.ship.xpos
@@ -146,6 +167,7 @@ class Environment
                     r: 130
 
             @exploder.attr initattr
+            @exploder.toFront()
             @exploder.animate animation, 1000
 
     class AsteroidWrapper
