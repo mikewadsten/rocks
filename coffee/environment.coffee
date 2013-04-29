@@ -20,6 +20,8 @@ class Environment
         @lzpointText.attr({"font-size": 16, fill: "#aaa"})
         @turnsText = @raphael.text(60, 50, "Turns: 0")
         @turnsText.attr({"font-size": 16, fill: "#aaa"})
+        # Say "Hey I'm here!"
+        @landingZone.view.notify @turn
 
     updateText: () ->
         @lzpointText.attr('text', "LZ Points: " + @lzpoints)
@@ -156,7 +158,7 @@ class Environment
             @ship.move direction
             @view.moveTo(@ship.xpos, @ship.ypos, 100)
 
-        animateExplode: () ->
+        explode: () ->
             initattr =
                 cx: (@ship.xpos * PX_PER_CELL) + 5
                 cy: (@ship.ypos * PX_PER_CELL) + 5
