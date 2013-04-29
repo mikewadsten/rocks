@@ -123,12 +123,20 @@ class Environment
     isShipSafeLA: () ->
         xpos = @ship.ship.xpos
         ypos = @ship.ship.ypos
-        for ast in @asteroids
-            moveturns = @turn - ast.initialturn
-            if ast.asteroid.move(moveturns).willCoverWithin(xpos, ypos, 2)
-                console.log "ship won't be safe within 2 turns"
-                return false
-        return true
+        turn = @turn
+        return not _.any(@asteroids, (ast) ->
+            moveTurns = turn - ast.initialturn
+            ast.asteroid.move(moveTurns).willCoverWithin(xpos, ypos, 2))
+        #willNotHitShip = (ast) ->
+            #moveTurns = @turn - ast.initialturn
+            #return not ast.asteroid.move(moveTurns).willCoverWithin(xpos, ypos, 2)
+        #return _.all(@asteroids, willNotHitShip)
+        #for ast in @asteroids
+            #moveturns = @turn - ast.initialturn
+            #if ast.asteroid.move(moveturns).willCoverWithin(xpos, ypos, 2)
+                #console.log "ship won't be safe within 2 turns"
+                #return false
+        #return true
 
     isShipSafe: () ->
         xpos = @ship.ship.xpos
