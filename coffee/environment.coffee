@@ -5,13 +5,18 @@ class Environment
     # asteroid-state-environment discussed in paper.
 
     constructor: (@raphael) ->
+        @gridWidth = 100
+        @gridHeight = 60
+        @initialize()
+
+    initialize: () ->
+        @raphael.clear();
+        @raphael.rect(0, 0, 1000, 600, 10).attr({fill: "#111", stroke: "none"});
+        # tells whose move it is
+        @playerMove = no
         @asteroids = []
         # Turn is raw turn count (number of player turns, for instance)
         @turn = 0
-        # tells whose move it is
-        @playerMove = yes
-        @gridWidth = 100
-        @gridHeight = 60
         theship = new Ship(@gridWidth/2, @gridHeight/2, @gridWidth, @gridHeight)
         @ship = new ShipWrapper(@raphael, theship)
         @landingZone = new LZWrapper(@raphael, @turn)
@@ -72,8 +77,10 @@ class Environment
         else
             @landingZone = new LZWrapper(@raphael, @turn)
 
-    startLoop: (fun) ->
-        INTERVAL = 100
+    startLoop: (fun, INTERVAL=500) ->
+        #INTERVAL = 100
+        #INTERVAL = 500
+        @runloopInterval = INTERVAL
         @runloop = setInterval(fun, INTERVAL)
 
     stopLoop: () ->
@@ -103,21 +110,32 @@ class Environment
 
             if @isShipSafeLA()
                 @ship.view.view.attr('fill', "#fff")
+                # if the ship is safe, ignore moveplan
+                @ship.moveplan = []
+                @playerMove = not @playerMove
+                @updateText()
+                return
             else
                 @ship.view.view.attr({fill: "#d00"})
-                #num = Math.floor (Math.random() * 9)
-                num = Math.floor (Math.random() * 8)
-                dir = switch num
-                    #when 0 then "s"
-                    when 0 then "ul"
-                    when 1 then "up"
-                    when 2 then "ur"
-                    when 3 then "r"
-                    when 4 then "dr"
-                    when 5 then "d"
-                    when 6 then "dl"
-                    else "l"
-                @ship.move dir
+
+            avoidanceActive = @executeLazyAvoidance()
+            if not avoidanceActive
+                console.log "Lazy avoidance has failed us!"
+
+            [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
+            turn = @turn
+            if _.any(@asteroids, (a) -> a.moveToNow(turn).covers(xpos, ypos))
+                # An asteroid has struck the ship!
+                @stopLoop()
+                @ship.explode()
+                text = @raphael.text(500, 300, "Aww... you died")
+                text.attr({fill: "#fff", "font-size": 30})
+                text.animate({y: 300, "fill-opacity": 0}, 1000)
+                youDied = () ->
+                    Env.initialize()
+                    Env.startLoop((() -> Env.bumpMove()), Env.runloopInterval)
+                _.delay(youDied, 1000)
+                return
 
         @playerMove = not @playerMove
         @updateText()
@@ -129,16 +147,6 @@ class Environment
         return not _.any(@asteroids, (ast) ->
             moveTurns = turn - ast.initialturn
             ast.asteroid.move(moveTurns).willCoverWithin(xpos, ypos, 2))
-        #willNotHitShip = (ast) ->
-            #moveTurns = @turn - ast.initialturn
-            #return not ast.asteroid.move(moveTurns).willCoverWithin(xpos, ypos, 2)
-        #return _.all(@asteroids, willNotHitShip)
-        #for ast in @asteroids
-            #moveturns = @turn - ast.initialturn
-            #if ast.asteroid.move(moveturns).willCoverWithin(xpos, ypos, 2)
-                #console.log "ship won't be safe within 2 turns"
-                #return false
-        #return true
 
     isShipSafe: () ->
         xpos = @ship.ship.xpos
@@ -149,10 +157,64 @@ class Environment
                 return false
         return true
 
+    # return true if we're going to survive (we hope)
+    # return false if we're dying (can't survive threats)
+    executeLazyAvoidance: () ->
+        console.log "#{@ship.moveplan.length} moves in moveplan"
+        if @ship.moveplan.length > 0
+            # moveplan is a 'queue' of moves to execute
+            move = @ship.moveplan.shift()
+            console.log "planned move: #{move}"
+            @ship.move move
+            return true
+        else if @isShipSafeLA()
+            # the ship is safe. carry on.
+            return true
+        else
+            # we need to plan out our moves
+            range = [0..8]
+            possible_move_plans = []
+            turn = @turn  # because of anon function below
+            for i in range
+                {xpos, ypos} = @ship.ship.pretendMove i
+                if _.all(@asteroids, (ast) ->
+                        turns = turn - ast.initialturn # at current turn
+                        not ast.asteroid.move(turns).willCoverWithin(xpos, ypos, 1))
+                    # moving ship just this one will be okay
+                    possible_move_plans.push [i]
+                else
+                    # discount any first-move which will result in a collision
+                    continue
+                for j in range
+                    {xpos, ypos} = @ship.ship.pretendMove(i,j)
+                    if _.all(@asteroids, (ast) ->
+                            turns = turn - ast.initialturn
+                            not ast.asteroid.move(turns+1).willCoverWithin(xpos, ypos, 1))
+                        possible_move_plans.push [i,j]
+            # Select move plan, etc.
+            console.log possible_move_plans
+            plancount = possible_move_plans.length
+            if plancount is 0
+                # we're screwed. but... how did we get here?
+                return false
+            twomoves = _.filter(possible_move_plans, (plan) -> plan.length is 2)
+            if twomoves.length is 0
+                plan = possible_move_plans[_.random(plancount - 1)]
+                [].push.apply @ship.moveplan, plan
+            else
+                plan = twomoves[_.random(twomoves.length - 1)]
+                [].push.apply @ship.moveplan, plan
+            # We just planned out this move and the next. Execute the first.
+            move = @ship.moveplan.shift()
+            console.log "planned move: #{move}"
+            @ship.move move
+            return true
+
     class ShipWrapper
         constructor: (raphael, @ship) ->
             @view = new VShip(raphael, @ship.xpos, @ship.ypos)
             @exploder = raphael.circle(@ship.xpos, @ship.ypos, 0).attr({"fill-opacity": 0, r:0})
+            @moveplan = []
 
         move: (direction) ->
             @ship.move direction
@@ -186,6 +248,9 @@ class Environment
 
         covers: (x, y) ->
             @asteroid.covers x,y
+
+        moveToNow: (turn) ->
+            @asteroid.move turn-@initialturn
 
         moveOrHide: (currturn) ->
             if currturn >= @lastTurn

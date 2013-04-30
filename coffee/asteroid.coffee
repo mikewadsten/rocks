@@ -2,7 +2,7 @@ class Asteroid
     constructor: (@xpos, @ypos, @xvel, @yvel) ->
 
     covers: (x, y) ->
-        willCover(x, y, 0)
+        @willCover(x, y, 0)
 
     willCover: (x, y, turns) ->
         # Because Raphael draws boxes from the top left corner,

@@ -54,31 +54,28 @@ class ViewLZ
             text = (@turnsLeft turn)
         else
             return false
-
-        resetattr =
+        resetAttr =
             "fill-opacity": 1
             x: @xpos + (CELLS_PER_SIDE * PX_PER_CELL)/2
             y: @ypos + (CELLS_PER_SIDE * PX_PER_CELL)/2
             text: text
-        anim_attr =
+        animAttr =
             y: @ypos - 25
             "fill-opacity": 0
+        @notifyText.attr resetAttr
+        @notifyText.animate animAttr, 500
 
-        @notifyText.attr resetattr
-        @notifyText.animate anim_attr, 500
-
-        ping_reset_attr =
+        pingResetAttr =
             cx: @xpos + (CELLS_PER_SIDE * PX_PER_CELL)/2
             cy: @ypos + (CELLS_PER_SIDE * PX_PER_CELL)/2
             "stroke-opacity": 1
             "stroke-width": 2
             r: 0
-        ping_anim_attr =
+        pingAnimAttr =
             "stroke-opacity": 0
             r: 10 * PX_PER_CELL
-        @pinger.attr ping_reset_attr
-        @pinger.animate ping_anim_attr, 500
-        #@notifyText.animate({y: @ypos - 50, "fill-opacity": 0}, 500)
+        @pinger.attr pingResetAttr
+        @pinger.animate pingAnimAttr, 500
 
     setPos: (x, y) ->
         @xpos = x * PX_PER_CELL
