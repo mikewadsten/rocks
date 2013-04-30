@@ -26,7 +26,10 @@ class Environment
         @turnsText = @raphael.text(60, 50, "Turns: 0")
         @turnsText.attr({"font-size": 16, fill: "#aaa"})
         # Say "Hey I'm here!"
-        @landingZone.view.notify @turn
+        if @runloopInterval >= 100
+            @landingZone.view.notify @turn
+        @movementInterval = 100
+        @algorithm = "lazy"
 
     updateText: () ->
         @lzpointText.attr('text', "LZ Points: " + @lzpoints)
@@ -77,16 +80,24 @@ class Environment
         else
             @landingZone = new LZWrapper(@raphael, @turn)
 
-    startLoop: (fun, INTERVAL=500) ->
+    startLoop: (INTERVAL=500) ->
         #INTERVAL = 100
         #INTERVAL = 500
         if window.location.hash and not isNaN(parseInt window.location.hash.substring(1))
             INTERVAL = parseInt(window.location.hash.substring(1))
         @runloopInterval = INTERVAL
-        @runloop = setInterval(fun, INTERVAL)
+        #@runloop = setInterval(fun, INTERVAL)
+        @movementInterval = INTERVAL
+        @bumpMove()
 
     stopLoop: () ->
-        if @runloop then clearInterval(@runloop)
+        @runloopInterval = -1
+
+    moveLoopMaybe: () ->
+        if @runloopInterval > 0 # somewhat arbitrary minimum
+            setTimeout((() -> Env.bumpMove()), @runloopInterval)
+        else
+            console.log "stopping game loop because interval <= 0"
 
     bumpMove: () ->
         if not @playerMove
@@ -95,7 +106,8 @@ class Environment
             # Respawn landign zone if needed
             if @landingZone.expired @turn
                 @landingZone.respawn @turn
-            @landingZone.view.notify @turn
+            if @movementInterval >= 100
+                @landingZone.view.notify @turn
             # Remove any asteroids whose last turn was over 20 turns ago
             @asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
             # "Hide" any asteroids who shouldn't be on screen
@@ -116,6 +128,7 @@ class Environment
                 @ship.moveplan = []
                 @playerMove = not @playerMove
                 @updateText()
+                @moveLoopMaybe()
                 return
             else
                 @ship.view.view.attr({fill: "#ff0"})
@@ -129,19 +142,23 @@ class Environment
             turn = @turn
             if _.any(@asteroids, (a) -> a.moveToNow(turn).covers(xpos, ypos))
                 # An asteroid has struck the ship!
-                @stopLoop()
+                #stopLoop() not needed here - the loop will stop on its own, duh
+                #@stopLoop()
                 @ship.explode()
                 text = @raphael.text(500, 300, "Aww... you died")
                 text.attr({fill: "#fff", "font-size": 30})
                 text.animate({y: 300, "fill-opacity": 0}, 1000)
+                # TODO: AJAX to server reporting results
+                Env.jsonify()
                 youDied = () ->
                     Env.initialize()
-                    Env.startLoop((() -> Env.bumpMove()), Env.runloopInterval)
+                    Env.startLoop(Env.runloopInterval)
                 _.delay(youDied, 1000)
                 return
 
         @playerMove = not @playerMove
         @updateText()
+        @moveLoopMaybe()
 
     isShipSafeLA: () ->
         xpos = @ship.ship.xpos
@@ -221,7 +238,7 @@ class Environment
 
         move: (direction) ->
             @ship.move direction
-            @view.moveTo(@ship.xpos, @ship.ypos, 100)
+            @view.moveTo(@ship.xpos, @ship.ypos, Env.movementInterval)
 
         explode: () ->
             initattr =
@@ -260,7 +277,7 @@ class Environment
                 @view.view.hide()
             else
                 nextpos = @asteroid.move(currturn - @initialturn)
-                @view.animateTo(nextpos.xpos, nextpos.ypos, 100)
+                @view.animateTo(nextpos.xpos, nextpos.ypos, Env.movementInterval)
 
     class LZWrapper
         constructor: (@raphael, @firstTurn, @gridw=100, @gridh=60) ->
@@ -284,5 +301,24 @@ class Environment
             @lz.ypos = @ypos
             @lz.expireTurn = @firstTurn + LZ_TURNS_TO_EXPIRE
             return this
+
+    jsonify: () ->
+        jsonObj = {}
+        jsonObj.ship = [@ship.ship.xpos, @ship.ship.ypos]
+        jsonObj.lz = [@landingZone.xpos, @landingZone.ypos, @landingZone.firstTurn]
+        jsonObj.turns = @turn
+        jsonObj.lzpoints = @lzpoints
+        jsonObj.algorithm = @algorithm
+        jsonObj.interval = @runloopInterval
+        jsonObj.movePlan = @ship.moveplan
+        jsonObj.moveHistory = ""
+        for m in @ship.ship.gethistory()
+            jsonObj.moveHistory += m
+        #jsonObj.moveHistory = @ship.ship.gethistory()
+        jsonObj.asteroids = []
+        for ast in @asteroids
+            aster = ast.asteroid
+            jsonObj.asteroids.push [aster.xpos, aster.ypos, aster.xvel, aster.yvel, ast.initialturn]
+        console.log (JSON.stringify jsonObj)
 
 window.Environment = Environment

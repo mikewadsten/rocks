@@ -6,7 +6,8 @@ Raphael(function () {
     window.Env = new Environment(raph);
 
     //Env.startLoop(function() {Env.bumpMove();});
-    window.start = function(millis) { Env.startLoop(function() { Env.bumpMove(); }, millis)};
+    //window.start = function(millis) { Env.startLoop(function() { Env.bumpMove(); }, millis)};
+    window.start = function(millis) { Env.startLoop(millis); }
     window.stop = function() { Env.stopLoop(); }
     //start(125);
     start(25); // makes animations smoother
