@@ -8,5 +8,5 @@ Raphael(function () {
     //Env.startLoop(function() {Env.bumpMove();});
     window.start = function(millis) { Env.startLoop(function() { Env.bumpMove(); }, millis)};
     window.stop = function() { Env.stopLoop(); }
-    start(250);
+    start(125);
 });
