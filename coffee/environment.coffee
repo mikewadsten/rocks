@@ -80,14 +80,20 @@ class Environment
         else
             @landingZone = new LZWrapper(@raphael, @turn)
 
-    startLoop: (INTERVAL=500) ->
+    startLoop: (INTERVAL=-1) ->
         #INTERVAL = 100
         #INTERVAL = 500
-        if window.location.hash and not isNaN(parseInt window.location.hash.substring(1))
-            INTERVAL = parseInt(window.location.hash.substring(1))
+        if INTERVAL <= 0
+            console.log "Can't start game loop with no or negative interval!"
+            return
+        else if window.location.hash and not isNaN(parseInt window.location.hash.substring(1))
+            interval = parseInt(window.location.hash.substring(1))
+            if interval is INTERVAL
+                INTERVAL = interval
         @runloopInterval = INTERVAL
         #@runloop = setInterval(fun, INTERVAL)
         @movementInterval = INTERVAL
+        window.location.hash = "##{INTERVAL}"
         @bumpMove()
 
     stopLoop: () ->
@@ -137,6 +143,8 @@ class Environment
             if not avoidanceActive
                 console.log "Lazy avoidance has failed us!"
                 @ship.view.view.attr({fill: "#d00"})
+                # Slow loop down to... 25x interval. Slo-mo death?
+                @runloopInterval *= 25
 
             [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
             turn = @turn
@@ -152,7 +160,7 @@ class Environment
                 Env.jsonify()
                 youDied = () ->
                     Env.initialize()
-                    Env.startLoop(Env.runloopInterval)
+                    Env.startLoop()
                 _.delay(youDied, 1000)
                 return
 
