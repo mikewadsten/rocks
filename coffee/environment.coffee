@@ -80,6 +80,8 @@ class Environment
     startLoop: (fun, INTERVAL=500) ->
         #INTERVAL = 100
         #INTERVAL = 500
+        if window.location.hash and not isNaN(parseInt window.location.hash.substring(1))
+            INTERVAL = parseInt(window.location.hash.substring(1))
         @runloopInterval = INTERVAL
         @runloop = setInterval(fun, INTERVAL)
 
@@ -116,11 +118,12 @@ class Environment
                 @updateText()
                 return
             else
-                @ship.view.view.attr({fill: "#d00"})
+                @ship.view.view.attr({fill: "#ff0"})
 
             avoidanceActive = @executeLazyAvoidance()
             if not avoidanceActive
                 console.log "Lazy avoidance has failed us!"
+                @ship.view.view.attr({fill: "#d00"})
 
             [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
             turn = @turn
@@ -160,11 +163,11 @@ class Environment
     # return true if we're going to survive (we hope)
     # return false if we're dying (can't survive threats)
     executeLazyAvoidance: () ->
-        console.log "#{@ship.moveplan.length} moves in moveplan"
+        #console.log "#{@ship.moveplan.length} moves in moveplan"
         if @ship.moveplan.length > 0
             # moveplan is a 'queue' of moves to execute
             move = @ship.moveplan.shift()
-            console.log "planned move: #{move}"
+            #console.log "planned move: #{move}"
             @ship.move move
             return true
         else if @isShipSafeLA()
@@ -192,7 +195,7 @@ class Environment
                             not ast.asteroid.move(turns+1).willCoverWithin(xpos, ypos, 1))
                         possible_move_plans.push [i,j]
             # Select move plan, etc.
-            console.log possible_move_plans
+            #console.log possible_move_plans
             plancount = possible_move_plans.length
             if plancount is 0
                 # we're screwed. but... how did we get here?
@@ -206,7 +209,7 @@ class Environment
                 [].push.apply @ship.moveplan, plan
             # We just planned out this move and the next. Execute the first.
             move = @ship.moveplan.shift()
-            console.log "planned move: #{move}"
+            #console.log "planned move: #{move}"
             @ship.move move
             return true
 
