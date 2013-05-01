@@ -80,7 +80,7 @@ class Environment
         else
             @landingZone = new LZWrapper(@raphael, @turn)
 
-    startLoop: (INTERVAL=-1) ->
+    startLoop: (INTERVAL=25) ->
         #INTERVAL = 100
         #INTERVAL = 500
         if INTERVAL <= 0
@@ -144,7 +144,7 @@ class Environment
                 console.log "Lazy avoidance has failed us!"
                 @ship.view.view.attr({fill: "#d00"})
                 # Slow loop down to... 25x interval. Slo-mo death?
-                @runloopInterval *= 25
+                #@runloopInterval *= 25
 
             [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
             turn = @turn
