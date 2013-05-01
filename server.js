@@ -11,5 +11,5 @@ var app = connect()
         res.end('Hello from my little test server!\n')
     });
 
-http.createServer(app).listen(8000);
-console.log("Started server on port 8000.\n");
+http.createServer(app).listen(80);
+console.log("Started server on port 80.\n");
