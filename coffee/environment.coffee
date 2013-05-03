@@ -45,12 +45,6 @@ class Environment
             when 2 then @addAsteroid(@ship.ship.xpos-1, @gridHeight-1, 0, -1)
             when 3 then @addAsteroid(-2, @ship.ship.ypos-1, 1, 0)
             else 0  # do nothing...
-        #switch fromdir
-            #when 0 then console.log "new asteroid up top?"
-            #when 1 then console.log "new asteroid on right?"
-            #when 2 then console.log "new asteroid on bottom?"
-            #when 3 then console.log "new asteroid on left?"
-            #else undefined # do nothing...
 
     addAsteroid: (xpos, ypos, vx=1, vy=1) ->
         ast = new Asteroid(xpos, ypos, vx, vy)
@@ -101,7 +95,8 @@ class Environment
 
     moveLoopMaybe: () ->
         if @runloopInterval > 0 # somewhat arbitrary minimum
-            setTimeout((() -> Env.bumpMove()), @runloopInterval)
+            looper = _.bind((() -> @bumpMove()), this)
+            setTimeout(looper, @runloopInterval)
         else
             console.log "stopping game loop because interval <= 0"
 
@@ -109,60 +104,55 @@ class Environment
         if not @playerMove
             # End this turn, increment counter to next
             @turn += 1
-            # Respawn landign zone if needed
+            # Respawn landing zone if needed
             if @landingZone.expired @turn
                 @landingZone.respawn @turn
             if @movementInterval >= 100
                 @landingZone.view.notify @turn
             # Remove any asteroids whose last turn was over 20 turns ago
-            @asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
+            onScreenRecently = (ast) -> ast.lastTurn > @turn - 20
+            onScreenRecently = _.bind(onScreenRecently, this)
+            #@asteroids = (a for a in @asteroids when a.lastTurn > @turn - 20)
+            @asteroids = _(@asteroids).filter(onScreenRecently)
             # "Hide" any asteroids who shouldn't be on screen
             for ast in @asteroids
                 ast.moveOrHide(@turn)
             @makeNewAsteroid()
-        else
-            # TODO: implement player turns
-            # Probably by passing an algorithm-object?
-            # Random walk
-            if @atLandingZone()
-                @lzpoints += 1
-                @landingZone.respawn @turn
-
-            if @isShipSafeLA()
-                @ship.view.view.attr('fill', "#fff")
-                # if the ship is safe, ignore moveplan
-                @ship.moveplan = []
-                @playerMove = not @playerMove
-                @updateText()
-                @moveLoopMaybe()
-                return
-            else
-                @ship.view.view.attr({fill: "#ff0"})
-
-            avoidanceActive = @executeLazyAvoidance()
-            if not avoidanceActive
-                console.log "Lazy avoidance has failed us!"
-                @ship.view.view.attr({fill: "#d00"})
-                # Slow loop down to... 25x interval. Slo-mo death?
-                #@runloopInterval *= 25
 
             [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
             turn = @turn
             if _.any(@asteroids, (a) -> a.moveToNow(turn).covers(xpos, ypos))
                 # An asteroid has struck the ship!
-                #stopLoop() not needed here - the loop will stop on its own, duh
-                #@stopLoop()
                 @ship.explode()
                 text = @raphael.text(500, 300, "Aww... you died")
                 text.attr({fill: "#fff", "font-size": 30})
                 text.animate({y: 300, "fill-opacity": 0}, 1000)
                 # TODO: AJAX to server reporting results
-                Env.jsonify()
+                # (to be uncommented when backend for data collection
+                # is in place - e.g. MySQL connection and all)
+                #ajax = new XMLHttpRequest()
+                #ajax.open "POST", "/report", true
+                #ajax.setRequestHeader "Content-Type", "application/json"
+                #ajax.send @jsonify()
                 youDied = () ->
                     Env.initialize()
                     Env.startLoop()
                 _.delay(youDied, 1000)
                 return
+        else
+            if @atLandingZone()
+                @lzpoints += 1
+                @landingZone.respawn @turn
+
+            # Use algorithms to implement movement behavior.
+            executor = switch @algorithm
+                when "lazy" then LazyAvoidance.execute
+                else LazyAvoidance.execute
+
+            probable_survival = executor(this)
+
+            if not probable_survival
+                @ship.view.view.attr {fill: "#d00" }
 
         @playerMove = not @playerMove
         @updateText()
@@ -325,8 +315,11 @@ class Environment
         #jsonObj.moveHistory = @ship.ship.gethistory()
         jsonObj.asteroids = []
         for ast in @asteroids
-            aster = ast.asteroid
+            #aster = ast.asteroid
+            aster = ast.moveToNow(@turn)
             jsonObj.asteroids.push [aster.xpos, aster.ypos, aster.xvel, aster.yvel, ast.initialturn]
-        console.log (JSON.stringify jsonObj)
+        retval = JSON.stringify jsonObj
+        console.log retval
+        retval
 
 window.Environment = Environment

@@ -7,8 +7,6 @@ class Ship
         @xpos == x and @ypos == y
 
     @dirtobyte: (direction) ->
-        if typeof direction is "number"
-            return direction
         switch direction
             when "s" then 0x0
             when "ul" then 0x1
@@ -47,7 +45,12 @@ class Ship
         return {xpos, ypos}
 
     move: (direction) ->
-        byte = Ship.dirtobyte direction
+        # turn direction into its corresponding number,
+        # if need be.
+        if _(direction).isNumber()
+            byte = direction
+        else
+            byte = Ship.dirtobyte direction
         #console.log "Ship moved... " + byte
         if byte in [0x1, 0x7, 0x8]
             @xpos -= 1

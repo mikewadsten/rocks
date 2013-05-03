@@ -23,6 +23,7 @@
     "grunt-contrib-copy": "~0.4.1",
     "connect": "~2.7.6",
     "grunt-contrib-clean": "~0.4.1",
-    "grunt-contrib-cssmin": "~0.6.0"
+    "grunt-contrib-cssmin": "~0.6.0",
+    "restify": "~2.4.1"
   }
 }

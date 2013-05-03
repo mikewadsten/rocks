@@ -1,15 +1,28 @@
 #!/usr/bin/env node
-var connect = require('connect'),
-    fs = require('fs'),
-    http = require('http');
+var restify = require('restify');
 
-var app = connect()
-    .use(connect.logger({format: 'short', stream: fs.createWriteStream("access.log")}))
-    .use(connect.static('public'))
-    //.use(connect.logger('tiny'))
-    .use(function(req, res) {
-        res.end('Hello from my little test server!\n')
-    });
+var server = restify.createServer();
 
-http.createServer(app).listen(80);
-console.log("Started server on port 80.\n");
+// Parse request bodies before accessing them.
+server.use(restify.bodyParser());
+
+function parse_report(body) {
+    console.log("Body: " + body);
+    console.log("Turns: " + (body.turns || -1));
+}
+
+server.get(/\/.*/, restify.serveStatic({
+    directory: './public',
+    default: 'index.html'
+}));
+
+server.post('/report', function(req, res, next) {
+    //console.log(req.body);
+    parse_report(req.body);
+    res.send(200);
+    return next();
+});
+
+server.listen(8000, function() {
+    console.log("%s listening at %s", server.name, server.url);
+});
