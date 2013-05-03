@@ -56,8 +56,13 @@ class LazyAvoidance
             # Check one more move into the future.
             for j in [0..8]
                 {xpos, ypos} = ship.pretendMove(i, j)
+                # TODO: willCoverWithin(..., 2) means that technically
+                # LazyAvoidance is looking ahead 3 turns here.
+                # This is to avoid it jumping straight back into a trap
+                # and whatnot. I will probably argue that this is for the
+                # best, and isn't an issue...
                 if _.any(asteroids, (a) ->
-                        a.moveToNow(env.turn + 1).willCoverWithin(xpos, ypos, 1))
+                        a.moveToNow(env.turn + 1).willCoverWithin(xpos, ypos, 2))
                     # This would be an unsafe second move.
                     #console.log "can't move #{i},#{j}"
                     continue
