@@ -86,4 +86,23 @@ class LazyAvoidance
         sh.move (sh.moveplan.shift())
         return true
 
+class BreadthFirst
+    class Node
+        constructor: (@x, @y, @turn) ->
+            @opened = false
+            @closed = false
+
+    @getNeighbors: (x, y, turn) ->
+        []  # TODO
+
+    # More accurately, modified depth-limited breath-first...
+    @execute: (env) ->
+        openList = []
+        false
+
+class AStar
+    # TODO: implement the shit out of this
+    @execute: (env) ->
+        false
+
 window.LazyAvoidance = LazyAvoidance

@@ -130,14 +130,16 @@ class Environment
                 # TODO: AJAX to server reporting results
                 # (to be uncommented when backend for data collection
                 # is in place - e.g. MySQL connection and all)
-                #ajax = new XMLHttpRequest()
-                #ajax.open "POST", "/report", true
-                #ajax.setRequestHeader "Content-Type", "application/json"
-                #ajax.send @jsonify()
-                youDied = () ->
-                    Env.initialize()
-                    Env.startLoop()
-                _.delay(youDied, 1000)
+                ajax = new XMLHttpRequest()
+                ajax.open "POST", "/report", true
+                ajax.setRequestHeader "Content-Type", "application/json"
+                ajax.send @jsonify()
+                #youDied = () ->
+                    #Env.initialize()
+                    #Env.startLoop()
+                #_.delay(youDied, 1000)
+                @initialize()
+                @startLoop()
                 return
         else
             if @atLandingZone()
