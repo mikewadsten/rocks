@@ -98,11 +98,11 @@ class Environment
         if vx == 0 then remturnsX = Infinity
         if vy == 0 then remturnsY = Infinity
         if vx < 0
-            remturnsX = Math.ceil(xpos / -vx)
+            remturnsX = Math.ceil((xpos+3) / -vx)
         if vx > 0
-            remturnsX = Math.ceil((@gridWidth - xpos) / vx)
+            remturnsX = Math.ceil((@gridWidth - xpos + 3) / vx)
         if vy < 0
-            remturnsY = Math.ceil(ypos / -vy)
+            remturnsY = Math.ceil((ypos+3) / -vy)
         if vy > 0
             remturnsY = Math.ceil((@gridHeight - ypos) / vy)
         remainingTurns = Math.min(remturnsX, remturnsY)
