@@ -35,16 +35,61 @@ class Environment
         @lzpointText.attr('text', "LZ Points: " + @lzpoints)
         @turnsText.attr('text', "Turns: " + @turn)
 
+    getNewAsteroidPos: () ->
+        # Randomly pick which direction the asteroid comes in from.
+        # Up, down, left, right, diagonally?
+        from = Math.floor Math.random()*8
+        shipx = @ship.ship.xpos
+        shipy = @ship.ship.ypos
+        gridw = @gridWidth
+        gridh = @gridHeight
+        # The starting positions for these asteroids are close enough to being straight
+        # onto the ship that I don't care.
+        downleft = ->
+            if shipy > (gridw - shipx) then {x: gridw-1, y: shipy-(gridw-shipx), xvel: -1, yvel: 1}
+            else if shipy < (gridw-shipx) then {x: (gridw-shipx)+shipy, y: -2, xvel: -1, yvel: 1}
+            else {x: gridw-1, y: -2, xvel: -1, yvel: 1}
+        upleft = ->
+            x2r = gridw - shipx
+            y2b = gridh - shipy
+            if y2b > x2r then {x: gridw-1, y: y2b-x2r, xvel: -1, yvel: -1}
+            else if y2b < x2r then {x: x2r+y2b, y: gridh-1, xvel: -1, yvel: -1}
+            else {x: gridw-1, y: gridh-1, xvel: -1, yvel: -1}
+        downright = ->
+            if shipy > shipx then {x: -2, y: shipy-shipx, xvel: 1, yvel: 1}
+            else if shipy < shipx then {x: shipx-shipy, y: -2, xvel: 1, yvel: 1}
+            else {x: -2, y: -2, xvel: 1, yvel: 1}
+        upright = ->
+            if (gridh-shipy) > shipx then {x: -2, y: (gridh-shipy)-shipx, xvel: 1, yvel: -1}
+            else if (gridh-shipy) < shipx
+            then {x: shipx-(gridh-shipy), y: gridh-1, xvel: 1, yvel: -1}
+            else {x: -2, y: -2, xvel: 1, yvel: -1}
+        switch from
+            #Coming down, left, up, right...
+            when 0 then {x: shipx-1, y: -2, xvel: 0, yvel: 1}
+            when 2 then {x: gridw-1, y: shipy-1, xvel: -1, yvel: 0}
+            when 4 then {x: shipx - 1, y: gridh-1, xvel: 0, yvel: -1}
+            when 6 then {x: -2, y: shipy-1, xvel: 1, yvel: 0}
+            # Coming downright, downleft, upleft, upright...
+            when 1 then downleft()
+            when 3 then upleft()
+            when 5 then upright()
+            else downright()
+
     makeNewAsteroid: () ->
+        if Math.random() >= 0.5
+            return
         # TODO: make asteroids come in from any direction...
         # if fromdir in 0..3, make new asteroid. else, don't
-        fromdir = Math.floor Math.random()*8
-        switch fromdir
-            when 0 then @addAsteroid(@ship.ship.xpos-1, -2, 0, 1)
-            when 1 then @addAsteroid(@gridWidth-1, @ship.ship.ypos-1, -1, 0)
-            when 2 then @addAsteroid(@ship.ship.xpos-1, @gridHeight-1, 0, -1)
-            when 3 then @addAsteroid(-2, @ship.ship.ypos-1, 1, 0)
-            else 0  # do nothing...
+        {x, y, xvel, yvel} = @getNewAsteroidPos()
+        @addAsteroid(x, y, xvel, yvel)
+        #fromdir = Math.floor Math.random()*8
+        #switch fromdir
+            #when 0 then @addAsteroid(@ship.ship.xpos-1, -2, 0, 1)
+            #when 1 then @addAsteroid(@gridWidth-1, @ship.ship.ypos-1, -1, 0)
+            #when 2 then @addAsteroid(@ship.ship.xpos-1, @gridHeight-1, 0, -1)
+            #when 3 then @addAsteroid(-2, @ship.ship.ypos-1, 1, 0)
+            #else 0  # do nothing...
 
     addAsteroid: (xpos, ypos, vx=1, vy=1) ->
         ast = new Asteroid(xpos, ypos, vx, vy)
@@ -160,76 +205,6 @@ class Environment
         @updateText()
         @moveLoopMaybe()
 
-    isShipSafeLA: () ->
-        xpos = @ship.ship.xpos
-        ypos = @ship.ship.ypos
-        turn = @turn
-        return not _.any(@asteroids, (ast) ->
-            moveTurns = turn - ast.initialturn
-            ast.asteroid.move(moveTurns).willCoverWithin(xpos, ypos, 2))
-
-    isShipSafe: () ->
-        xpos = @ship.ship.xpos
-        ypos = @ship.ship.ypos
-        for ast in @asteroids
-            if ast.covers(xpos, ypos)
-                console.log "An asteroid covers the ship?"
-                return false
-        return true
-
-    # return true if we're going to survive (we hope)
-    # return false if we're dying (can't survive threats)
-    executeLazyAvoidance: () ->
-        #console.log "#{@ship.moveplan.length} moves in moveplan"
-        if @ship.moveplan.length > 0
-            # moveplan is a 'queue' of moves to execute
-            move = @ship.moveplan.shift()
-            #console.log "planned move: #{move}"
-            @ship.move move
-            return true
-        else if @isShipSafeLA()
-            # the ship is safe. carry on.
-            return true
-        else
-            # we need to plan out our moves
-            range = [0..8]
-            possible_move_plans = []
-            turn = @turn  # because of anon function below
-            for i in range
-                {xpos, ypos} = @ship.ship.pretendMove i
-                if _.all(@asteroids, (ast) ->
-                        turns = turn - ast.initialturn # at current turn
-                        not ast.asteroid.move(turns).willCoverWithin(xpos, ypos, 1))
-                    # moving ship just this one will be okay
-                    possible_move_plans.push [i]
-                else
-                    # discount any first-move which will result in a collision
-                    continue
-                for j in range
-                    {xpos, ypos} = @ship.ship.pretendMove(i,j)
-                    if _.all(@asteroids, (ast) ->
-                            turns = turn - ast.initialturn
-                            not ast.asteroid.move(turns+1).willCoverWithin(xpos, ypos, 1))
-                        possible_move_plans.push [i,j]
-            # Select move plan, etc.
-            #console.log possible_move_plans
-            plancount = possible_move_plans.length
-            if plancount is 0
-                # we're screwed. but... how did we get here?
-                return false
-            twomoves = _.filter(possible_move_plans, (plan) -> plan.length is 2)
-            if twomoves.length is 0
-                plan = possible_move_plans[_.random(plancount - 1)]
-                [].push.apply @ship.moveplan, plan
-            else
-                plan = twomoves[_.random(twomoves.length - 1)]
-                [].push.apply @ship.moveplan, plan
-            # We just planned out this move and the next. Execute the first.
-            move = @ship.moveplan.shift()
-            #console.log "planned move: #{move}"
-            @ship.move move
-            return true
-
     class ShipWrapper
         constructor: (raphael, @ship) ->
             @view = new VShip(raphael, @ship.xpos, @ship.ypos)
@@ -315,13 +290,14 @@ class Environment
         for m in @ship.ship.gethistory()
             jsonObj.moveHistory += m
         #jsonObj.moveHistory = @ship.ship.gethistory()
-        jsonObj.asteroids = []
-        for ast in @asteroids
-            #aster = ast.asteroid
-            aster = ast.moveToNow(@turn)
-            jsonObj.asteroids.push [aster.xpos, aster.ypos, aster.xvel, aster.yvel, ast.initialturn]
+        # On second though let's not send the asteroids in.
+        #jsonObj.asteroids = []
+        #for ast in @asteroids
+            ##aster = ast.asteroid
+            #aster = ast.moveToNow(@turn)
+            #jsonObj.asteroids.push [aster.xpos, aster.ypos, aster.xvel, aster.yvel, ast.initialturn]
         retval = JSON.stringify jsonObj
-        console.log retval
+        #console.log retval
         retval
 
 window.Environment = Environment
