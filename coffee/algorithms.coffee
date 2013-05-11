@@ -74,6 +74,10 @@ class LazyAvoidance
         return true
 
 class BreadthFirst
+    @isLandingZone: ({x, y, turn}, env) ->
+        x is env.landingZone.xpos and y is env.landingZone.ypos and
+                    not env.landingZone.expired(turn)
+
     # More accurately, modified depth-limited breath-first...
     @execute: (env) ->
         # Use predetermined flight plan if there is one
@@ -101,9 +105,10 @@ class BreadthFirst
 
         while openList.length
             node = openList.shift()
-            # TODO: Handle checking for landing zone
             neighbors = env.ssp.getNeighbors(node, (node.turn - startTurn + 1))
-            if node.turn > depthTurn or ((_.isEmpty neighbors) and (_.isEmpty openList))
+            # If we've gone too deep, or we found the Landing Zone
+            if BreadthFirst.isLandingZone(node, env) or node.turn > depthTurn or
+                            ((_.isEmpty neighbors) and (_.isEmpty openList))
                 # We've reached the end. Just trace back how to get here...
                 if node.turn > depthTurn
                     # we don't want this node, we need its parent
@@ -122,7 +127,11 @@ class BreadthFirst
                 return true
             else
                 for n in _(neighbors).where({opened: false, closed: false})
-                    openList.push n
+                    # Force noticing the landing zone first.
+                    if BreadthFirst.isLandingZone(n, env)
+                        openList.unshift n
+                    else
+                        openList.push n
                     n.opened = true
                     n.parent = node
 
