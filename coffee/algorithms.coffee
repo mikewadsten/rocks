@@ -157,11 +157,11 @@ class AStar
         if env.landingZone.expired(env.turn + AStar.euclid(startNode, lz) + 2)
             # The landing zone won't be there is roughly the time it will take to
             # go straight there. Fall back to Lazy
-            console.log "LZ too far away, changing to lazy for now"
+            #console.log "LZ too far away, changing to lazy for now"
             return LazyAvoidance.execute env
         if AStar.wallDistance(lz, env) < AStar.euclid(startNode, lz)
             # LZ is too close to the wall to be logically approached.
-            console.log "LZ too close to wall, switching to lazy for now"
+            #console.log "LZ too close to wall, switching to lazy for now"
             return LazyAvoidance.execute env
         for g in env.ssp.grids
             g.unplanAll()
