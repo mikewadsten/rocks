@@ -33,8 +33,13 @@ function parse_report(body) {
     args = [body.ship, body.lz, body.turns, body.lzpoints, body.algorithm,
                 body.interval, body.movePlan, body.moveHistory];
     newargs = [];
-    for (var i = 0; i < args.length; i++)
-        newargs.push(JSON.stringify(args[i]));
+    for (var i = 0; i < args.length; i++) {
+        // Arrays are represented poorly if not stringified
+        if (args[i] instanceof Array)
+            newargs.push(JSON.stringify(args[i]));
+        else
+            newargs.push(args[i]);
+    }
     //console.log(newargs);
     stmt.run(newargs);
     stmt.finalize();
@@ -42,14 +47,16 @@ function parse_report(body) {
 
 server.get('/stats', function(req, res, next) {
     res.status(200);
-    query = "select count(*) as count, min(turns) as min, max(turns) as max, avg(turns) as avg"
-    query += " from data"
-    return db.get(query, function(err, row) {
+    values = ["algorithm", "count(*) as count", "min(turns) as shortest", "max(turns) as longest",
+                "avg(turns) as average"]
+    query = "select " + (values.join(", ")) + " from data group by algorithm order by algorithm"
+    return db.all(query, function(err, rows) {
         if (err)
             return next(err);
 
-        if (row !== undefined) {
-            res.json(row);
+        if (rows.length) {
+            res.contentType = 'json';
+            res.send(JSON.stringify({stats: rows}))
         }
         else {
             res.json({"error": "result set is empty"});

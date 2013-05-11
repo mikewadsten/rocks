@@ -27,7 +27,7 @@ class SearchSpace
                     when 0 then 4
                     else 5
             plan.unshift move
-        console.log plan
+        #console.log plan
         return plan
 
     newAsteroid: (asteroid) ->

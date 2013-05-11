@@ -22,18 +22,21 @@ class Environment
         @ship = new ShipWrapper(@raphael, theship)
         @landingZone = new LZWrapper(@raphael, @turn)
         @lzpoints = 0
-        @lzpointText = @raphael.text(60, 20, "LZ Points: 0")
-        @lzpointText.attr({"font-size": 16, fill: "#aaa"})
-        @turnsText = @raphael.text(60, 50, "Turns: 0")
-        @turnsText.attr({"font-size": 16, fill: "#aaa"})
+        # text-anchor: start --> left-align text to where I set it to
+        @algText = @raphael.text(20, 20, "Algorithm:")
+        @algText.attr({"font-size": 14, fill: "#aaa", "text-anchor": "start"})
+        @lzpointText = @raphael.text(20, 40, "LZ Points: 0")
+        @lzpointText.attr({"font-size": 14, fill: "#aaa", "text-anchor": "start"})
+        @turnsText = @raphael.text(20, 60, "Turns: 0")
+        @turnsText.attr({"font-size": 14, fill: "#aaa", "text-anchor": "start"})
         # Say "Hey I'm here!"
         if @runloopInterval >= 100
             @landingZone.view.notify @turn
         @movementInterval = 100
-        @algorithm = "lazy"
-        if window.location.toString().indexOf("bfs") isnt -1
-            @algorithm = "mdlbfs"
-        # TODO: change depth based on algorithm
+        algorithmCount = 2
+        @algorithm = switch (Math.floor (Math.random()*algorithmCount))
+            when 0 then "lazy"
+            else "mdlbfs"
         depth = switch @algorithm
             when "mdlbfs" then 20
             else 6
@@ -42,6 +45,10 @@ class Environment
     updateText: () ->
         @lzpointText.attr('text', "LZ Points: " + @lzpoints)
         @turnsText.attr('text', "Turns: " + @turn)
+        alg = switch @algorithm
+            when "mdlbfs" then "MDLBFS"
+            else "Lazy"
+        @algText.attr('text', "Algorithm: " + alg)
 
     getNewAsteroidPos: () ->
         # Randomly pick which direction the asteroid comes in from.
@@ -127,7 +134,7 @@ class Environment
             return
         else if window.location.hash and not isNaN(parseInt window.location.hash.substring(1))
             interval = parseInt(window.location.hash.substring(1))
-            if interval is INTERVAL
+            if interval isnt INTERVAL
                 INTERVAL = interval
         @runloopInterval = INTERVAL
         #@runloop = setInterval(fun, INTERVAL)

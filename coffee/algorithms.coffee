@@ -116,7 +116,7 @@ class BreadthFirst
         for g in env.ssp.grids
             g.unplanAll()
 
-        console.log "searching up until turn #{depthTurn} (depth #{maxdepth})"
+        #console.log "searching up until turn #{depthTurn} (depth #{maxdepth})"
 
         startNode = env.ssp.grids[0].getNodeAt(env.ship.ship.xpos, env.ship.ship.ypos)
         openList.push startNode
@@ -130,10 +130,10 @@ class BreadthFirst
                 if node.turn > depthTurn
                     # we don't want this node, we need its parent
                     node = node.parent
-                console.log node
+                #console.log node
                 opacity = 1
                 sh.moveplan = SearchSpace.tracePlan(node)
-                console.log "moveplan: #{sh.moveplan}"
+                #console.log "moveplan: #{sh.moveplan}"
                 # equivalent of a do-while
                 loop
                     c = env.overlay.circle(node.x * PX_PER_CELL  + 5, node.y * PX_PER_CELL + 5, 5)
