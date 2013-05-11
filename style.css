@@ -5,5 +5,16 @@ body {
 
 #contents {
     width: 1000px;
+    height: 600px;
     margin: 0 auto;
+    position: relative;
+}
+
+#overlay,
+#holder {
+    position: absolute;
+}
+
+#overlay {
+    z-index: 999;
 }

@@ -4,16 +4,17 @@ class Environment
     # we can extrapolate asteroids positions -- this is the
     # asteroid-state-environment discussed in paper.
 
-    constructor: (@raphael) ->
+    constructor: (@raphael, @overlay) ->
         @gridWidth = 100
         @gridHeight = 60
         @initialize()
 
     initialize: () ->
         @raphael.clear();
+        @overlay.clear();
         @raphael.rect(0, 0, 1000, 600, 10).attr({fill: "#111", stroke: "none"});
         # tells whose move it is
-        @playerMove = no
+        @playerMove = true
         @asteroids = []
         # Turn is raw turn count (number of player turns, for instance)
         @turn = 0
@@ -30,6 +31,8 @@ class Environment
             @landingZone.view.notify @turn
         @movementInterval = 100
         @algorithm = "lazy"
+        # TODO: change depth based on algorithm
+        @ssp = new SearchSpace(6, this)
 
     updateText: () ->
         @lzpointText.attr('text', "LZ Points: " + @lzpoints)
@@ -79,17 +82,8 @@ class Environment
     makeNewAsteroid: () ->
         if Math.random() >= 0.5
             return
-        # TODO: make asteroids come in from any direction...
-        # if fromdir in 0..3, make new asteroid. else, don't
         {x, y, xvel, yvel} = @getNewAsteroidPos()
         @addAsteroid(x, y, xvel, yvel)
-        #fromdir = Math.floor Math.random()*8
-        #switch fromdir
-            #when 0 then @addAsteroid(@ship.ship.xpos-1, -2, 0, 1)
-            #when 1 then @addAsteroid(@gridWidth-1, @ship.ship.ypos-1, -1, 0)
-            #when 2 then @addAsteroid(@ship.ship.xpos-1, @gridHeight-1, 0, -1)
-            #when 3 then @addAsteroid(-2, @ship.ship.ypos-1, 1, 0)
-            #else 0  # do nothing...
 
     addAsteroid: (xpos, ypos, vx=1, vy=1) ->
         ast = new Asteroid(xpos, ypos, vx, vy)
@@ -109,6 +103,7 @@ class Environment
 
         wrapper = new AsteroidWrapper(@raphael, ast, @turn, @turn + remainingTurns)
         @asteroids.push wrapper
+        @ssp.newAsteroid wrapper
 
     atLandingZone: () ->
         @landingZone isnt null and @ship.ship.at(@landingZone.xpos, @landingZone.ypos)
@@ -145,10 +140,35 @@ class Environment
         else
             console.log "stopping game loop because interval <= 0"
 
+    explodeIfDead: () ->
+        [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
+        turn = @turn
+        if _.any(@asteroids, (a) -> a.moveToNow(turn).covers(xpos, ypos))
+            # An asteroid has struck the ship!
+            @ship.explode()
+            text = @raphael.text(500, 300, "Aww... you died")
+            text.attr({fill: "#fff", "font-size": 30})
+            text.animate({y: 300, "fill-opacity": 0}, 1000)
+            # TODO: AJAX to server reporting results
+            # (to be uncommented when backend for data collection
+            # is in place - e.g. MySQL connection and all)
+            if window.location.toString().indexOf("nogo") is -1
+                ajax = new XMLHttpRequest()
+                ajax.open "POST", "/report", true
+                ajax.setRequestHeader "Content-Type", "application/json"
+                ajax.send @jsonify()
+            @initialize()
+            if window.location.toString().indexOf("nogo") is -1
+                @startLoop()
+            return true
+        return false
+
     bumpMove: () ->
         if not @playerMove
             # End this turn, increment counter to next
             @turn += 1
+            # Shift search space
+            @ssp.bumpTurn()
             # Respawn landing zone if needed
             if @landingZone.expired @turn
                 @landingZone.respawn @turn
@@ -163,29 +183,8 @@ class Environment
             for ast in @asteroids
                 ast.moveOrHide(@turn)
             @makeNewAsteroid()
-
-            [xpos, ypos] = [@ship.ship.xpos, @ship.ship.ypos]
-            turn = @turn
-            if _.any(@asteroids, (a) -> a.moveToNow(turn).covers(xpos, ypos))
-                # An asteroid has struck the ship!
-                @ship.explode()
-                text = @raphael.text(500, 300, "Aww... you died")
-                text.attr({fill: "#fff", "font-size": 30})
-                text.animate({y: 300, "fill-opacity": 0}, 1000)
-                # TODO: AJAX to server reporting results
-                # (to be uncommented when backend for data collection
-                # is in place - e.g. MySQL connection and all)
-                ajax = new XMLHttpRequest()
-                ajax.open "POST", "/report", true
-                ajax.setRequestHeader "Content-Type", "application/json"
-                ajax.send @jsonify()
-                #youDied = () ->
-                    #Env.initialize()
-                    #Env.startLoop()
-                #_.delay(youDied, 1000)
-                @initialize()
-                @startLoop()
-                return
+            if @explodeIfDead()
+                return false
         else
             if @atLandingZone()
                 @lzpoints += 1
@@ -194,6 +193,7 @@ class Environment
             # Use algorithms to implement movement behavior.
             executor = switch @algorithm
                 when "lazy" then LazyAvoidance.execute
+                when "mdlbfs" then BreadthFirst.execute
                 else LazyAvoidance.execute
 
             probable_survival = executor(this)
@@ -204,6 +204,56 @@ class Environment
         @playerMove = not @playerMove
         @updateText()
         @moveLoopMaybe()
+        return true
+
+    class SearchSpace
+        constructor: (@depth, @env) ->
+            @grids = new Array(@depth)
+            for i in [0..depth-1]
+                @grids[i] = new Grid(@env.gridWidth, @env.gridHeight, i)
+
+        newAsteroid: (asteroid) ->
+            for g in @grids
+                g.closeFootprint asteroid
+
+        bumpTurn: () ->
+            @grids.shift() # drop first grid in array
+            newturn = @env.turn + @depth - 1
+            newgrid = new Grid(@env.gridWidth, @env.gridHeight, newturn)
+            # extend footprints into new grid
+            # but pre-filter the asteroid list to only those which will be on screen then
+            for a in _.filter(@env.asteroids, (a) -> a.lastTurn >= newturn)
+                newgrid.closeFootprint a
+            @grids.push newgrid
+            @env.overlay.clear()
+            if window.location.toString().indexOf("overlay") is -1
+                return
+            console.log "starting node checking..."
+            for col in @grids[0]._nodes
+                for node in _.where(col, {closed: true})
+                #for node in col
+                    circle = @env.overlay.circle(node.x * PX_PER_CELL + 5, node.y * PX_PER_CELL + 5, 2)
+                    circle.attr('stroke', 0)
+                    circle.attr({fill: 'red', 'fill-opacity': 0.5})
+            for col in @grids[1]._nodes
+                for node in _.where(col, {closed: true})
+                    circle = @env.overlay.circle(node.x * PX_PER_CELL + 5, node.y * PX_PER_CELL + 5, 2)
+                    circle.attr('stroke', 0)
+                    circle.attr({fill: 'orange', 'fill-opacity': 0.5})
+            for col in @grids[2]._nodes
+                for node in _.where(col, {closed: true})
+                    circle = @env.overlay.circle(node.x * PX_PER_CELL + 5, node.y * PX_PER_CELL + 5, 2)
+                    circle.attr('stroke', 0)
+                    circle.attr({fill: 'yellow', 'fill-opacity': 0.5})
+            return # just show two-turns out
+            for col in @grids[3]._nodes
+                for node in _.where(col, {closed: true})
+                    circle = @env.overlay.circle(node.x * PX_PER_CELL + 5, node.y * PX_PER_CELL + 5, 2)
+                    circle.attr('stroke', 0)
+                    circle.attr({fill: 'gray', 'fill-opacity': 0.5})
+
+        slice: (start, end) ->
+            @grids.slice start, end
 
     class ShipWrapper
         constructor: (raphael, @ship) ->

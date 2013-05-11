@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var restify = require('restify'),
+    fs = require('fs'),
     sqlite = require('sqlite3').verbose();
 
 var server = restify.createServer();
@@ -7,17 +8,17 @@ var server = restify.createServer();
 var db = new sqlite.Database('data.db');
 
 db.serialize(function() {
-    db.run("DROP TABLE IF EXISTS data");
+    //db.run("DROP TABLE IF EXISTS data");
     columns = ["id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL",
                 "ship TEXT", "lz TEXT", "turns INTEGER", "lzpoints INTEGER",
                 "algorithm TEXT", "interval INTEGER", "movePlan TEXT",
                 "moveHistory TEXT"]
-    db.run("CREATE TABLE data " +
+    db.run("CREATE TABLE IF NOT EXISTS data " +
             "(" + columns.join() + ")");
     // Wipe the data out
-    db.run("DELETE FROM data");
+    //db.run("DELETE FROM data");
     // Reset auto-increment counter
-    db.run("DELETE FROM SQLITE_SEQUENCE WHERE NAME = 'data'");
+    //db.run("DELETE FROM SQLITE_SEQUENCE WHERE NAME = 'data'");
 });
 
 // Parse request bodies before accessing them.
@@ -56,6 +57,19 @@ server.get('/stats', function(req, res, next) {
         return next();
     });
 });
+
+server.get('/nogo', function(req, res, next) {
+    fs.readFile('./nogo.html', function(err, content) {
+        if (err) {
+            res.send(500);
+        } else {
+            res.contentType = 'html';
+            res.status(200);
+            res.end(content, 'utf-8');
+        }
+        return next();
+    })
+})
 
 server.get(/\/.*/, restify.serveStatic({
     directory: './public',

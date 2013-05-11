@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <title>Rocks in Space Demo</title>
+        <link href="/assets/style.min.css" rel="stylesheet" />
+    </head>
+    <body>
+        <div id="contents">
+            <h1><i>Rocks in Space</i> - Mike Wadsten</h1>
+            <div id="holder"></div>
+            <div id="overlay"></div>
+        </div>
+    </body>
+
+    <!-- TODO: Do I even need underscore anymore? -->
+    <script src="/assets/underscore-min.js"></script>
+    <script src="/assets/rocksinspace.min.js"></script>
+    <script src="/assets/raphael-min.js"></script>
+    <script>
+        Raphael(function () {
+            var raph = Raphael("holder", 1000, 600);
+            // Create black "screen" for environment
+            var overlay = Raphael("overlay", 1000, 600);
+
+            window.MyRaphael = raph;
+            window.Overlay = overlay;
+            window.Env = new Environment(raph, overlay);
+
+            //Env.startLoop(function() {Env.bumpMove();});
+            //window.start = function(millis) { Env.startLoop(function() { Env.bumpMove(); }, millis)};
+            window.start = function(millis) { Env.startLoop(millis); }
+            window.stop = function() { Env.stopLoop(); }
+            //start(125);
+            //start(25); // makes animations smoother
+        });
+    </script>
+    <!--<script src="/assets/init.js"></script>-->
+</html>
+
