@@ -1,9 +1,9 @@
 class Grid
     class Node
-        constructor: (@x, @y) ->
+        constructor: (@x, @y, @turn) ->
             @opened = false
             @closed = false # closed - search is done with it, or it is un-navigable
-            @parent = -1 # move direction that landed us here
+            @parent = null  # node we were at before this
 
     constructor: (@width, @height, @turn) ->
         #console.log "new Grid " + @width + " " + @height + " " + @turn
@@ -14,14 +14,14 @@ class Grid
         for i in [0..w-1]
             nodes[i] = new Array(h)
             for j in [0..h-1]
-                nodes[i][j] = new Node(i, j)
+                nodes[i][j] = new Node(i, j, turn)
         return nodes
 
     unplanAll: ->
         for i in [0..@width-1]
             for j in [0..@height-1]
-                node = nodes[i][j]
-                node.parent = -1
+                node = @_nodes[i][j]
+                node.parent = null
                 node.opened = false
 
     # Whenever a new asteroid appears in the environment, this will
@@ -51,12 +51,12 @@ class Grid
     isUnplanned: (x, y) ->
         if x < 0 or x >= @width or y < 0 or y >= @height
             return false # keep ships from wanting to head offscreen, stupid things...
-        return @_nodes[x][y].parent < 0
+        return @_nodes[x][y].parent isnt null
 
-    plan: (x, y, via) ->
+    plan: (x, y, parent) ->
         if x < 0 or x >= @width or y < 0 or y >= @height
             return false # keep ships from wanting to head offscreen, stupid things...
-        @_nodes[x][y].parent = via
+        @_nodes[x][y].parent = parent
 
     # It's best to not call this without checking the indices are in bounds...
     getNodeAt: (x, y) ->

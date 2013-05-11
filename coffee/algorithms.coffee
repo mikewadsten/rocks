@@ -74,28 +74,79 @@ class LazyAvoidance
         return true
 
 class BreadthFirst
-    class Node
-        constructor: (@x, @y, @turn) ->
-            @opened = false
-            @closed = false
-
-    @getNeighbors: (x, y, atdepth, env) ->
+    @getNeighbors: (node, turnsahead, env) ->
         ssp = env.ssp
-        if atdepth > ssp.depth
-            return [] # can't go any deeper.
+        if turnsahead >= ssp.depth
+            return [] # can't go deeper than we know of
+        {x, y} = node
         xs = _.filter([x-1, x, x+1], (i) -> (0 <= i < env.gridWidth))
         ys = _.filter([y-1, y, y+1], (i) -> (0 <= i < env.gridHeight))
         results = []
-        for i in xs
-            for j in ys
-                results.push (ssp.grids[atdepth].getNodeAt(i, j))
+        # shuffle the 'moves' so that we don't always go up-left in the end...
+        for i in _.shuffle xs
+            for j in _.shuffle ys
+                # Because we don't want to be 'stupid' and be able to occupy the
+                # same space as an asteroid just before it moves, we'll exclude
+                # neighbors who aren't safe right now. This should keep it out of
+                # some stupid traps like two diagonal-moving asteroids next to each
+                # other, "sweeping out" a path and plowing the ship along with it.
+                if ssp.grids[turnsahead-1] and ssp.grids[turnsahead-1].isSafe(i, j) \
+                    and ssp.grids[turnsahead] and ssp.grids[turnsahead].isSafe(i,j) \
+                    and ssp.grids[turnsahead+1] and ssp.grids[turnsahead+1].isSafe(i, j)
+                        results.push (ssp.grids[turnsahead].getNodeAt(i, j))
         return results
 
     # More accurately, modified depth-limited breath-first...
     @execute: (env) ->
-        openList = BreadthFirst.getNeighbors(env.ship.ship.xpos, env.ship.ship.ypos, 1, env)
-        console.log _.where(openList, {closed: true})
-        LazyAvoidance.execute env
+        # Use predetermined flight plan if there is one
+        sh = env.ship
+        if sh.moveplan.length > 0
+            sh.move (sh.moveplan.shift())
+            return true
+        {xpos, ypos} = sh.ship
+        xdist = env.gridWidth - xpos - 1
+        ydist = env.gridHeight - ypos - 1
+        # If halfway to edge < 3, set depth to 3 so we get away from edge faster, maybe.
+        maxdepth = Math.floor Math.max(3, _.min([xpos/2, ypos/2, xdist/2, ydist/2]))
+        # need this to keep track of search depth as we go
+        startTurn = env.turn
+        depthTurn = env.turn + maxdepth
+        openList = []
+        # reset plans
+        for g in env.ssp.grids
+            g.unplanAll()
+
+        console.log "searching up until turn #{depthTurn} (depth #{maxdepth})"
+
+        startNode = env.ssp.grids[0].getNodeAt(env.ship.ship.xpos, env.ship.ship.ypos)
+        openList.push startNode
+
+        while openList.length
+            node = openList.shift()
+            # TODO: Handle checking for landing zone
+            neighbors = BreadthFirst.getNeighbors(node, (node.turn - startTurn + 1), env)
+            if node.turn > depthTurn or ((_.isEmpty neighbors) and (_.isEmpty openList))
+                # We've reached the end. Just trace back how to get here...
+                if node.turn > depthTurn
+                    # we don't want this node, we need its parent
+                    node = node.parent
+                console.log node
+                opacity = 1
+                sh.moveplan = SearchSpace.tracePlan(node)
+                console.log "moveplan: #{sh.moveplan}"
+                # equivalent of a do-while
+                loop
+                    c = env.overlay.circle(node.x * PX_PER_CELL  + 5, node.y * PX_PER_CELL + 5, 5)
+                    opacity *= 0.8
+                    c.attr({fill: 'red', 'fill-opacity': opacity, stroke: 'gray'})
+                    break unless (node = node.parent) isnt null
+                sh.move (sh.moveplan.shift() or 0)
+                return true
+            else
+                for n in _(neighbors).where({opened: false, closed: false})
+                    openList.push n
+                    n.opened = true
+                    n.parent = node
 
 class AStar
     # TODO: implement the shit out of this
