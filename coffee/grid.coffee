@@ -23,6 +23,8 @@ class Grid
                 node = @_nodes[i][j]
                 node.parent = null
                 node.opened = false
+                if node.f or node.g or node.h
+                    node.f = node.g = node.h = 0
 
     # Whenever a new asteroid appears in the environment, this will
     # be called to ensure the spots it will cover are marked as closed.

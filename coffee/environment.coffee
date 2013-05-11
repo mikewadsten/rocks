@@ -20,7 +20,7 @@ class Environment
         @turn = 0
         theship = new Ship(@gridWidth/2, @gridHeight/2, @gridWidth, @gridHeight)
         @ship = new ShipWrapper(@raphael, theship)
-        @landingZone = new LZWrapper(@raphael, @turn)
+        @landingZone = new LZWrapper(@raphael, @turn, this)
         @lzpoints = 0
         # text-anchor: start --> left-align text to where I set it to
         @algText = @raphael.text(20, 20, "Algorithm:")
@@ -33,11 +33,17 @@ class Environment
         if @runloopInterval >= 100
             @landingZone.view.notify @turn
         @movementInterval = 100
-        algorithmCount = 2
+        algorithmCount = 3
         @algorithm = switch (Math.floor (Math.random()*algorithmCount))
             when 0 then "lazy"
-            else "mdlbfs"
+            when 1 then "mdlbfs"
+            else "astar"
+        if window.location.toString().indexOf("bfs") isnt -1
+            @algorithm = "mdlbfs"
+        else if window.location.toString().indexOf("astar") isnt -1
+            @algorithm = "astar"
         depth = switch @algorithm
+            when "astar" then 30
             when "mdlbfs" then 20
             else 6
         @ssp = new SearchSpace(depth, this)
@@ -46,8 +52,10 @@ class Environment
         @lzpointText.attr('text', "LZ Points: " + @lzpoints)
         @turnsText.attr('text', "Turns: " + @turn)
         alg = switch @algorithm
+            when "astar" then "A*"
             when "mdlbfs" then "MDLBFS"
-            else "Lazy"
+            when "lazy" then "Lazy"
+            else "Lazy (by default)"
         @algText.attr('text', "Algorithm: " + alg)
 
     getNewAsteroidPos: () ->
@@ -124,7 +132,7 @@ class Environment
         if @landingZone
             @landingZone.respawn @turn
         else
-            @landingZone = new LZWrapper(@raphael, @turn)
+            @landingZone = new LZWrapper(@raphael, @turn, this)
 
     startLoop: (INTERVAL=25) ->
         #INTERVAL = 100
@@ -206,6 +214,7 @@ class Environment
             executor = switch @algorithm
                 when "lazy" then LazyAvoidance.execute
                 when "mdlbfs" then BreadthFirst.execute
+                when "astar" then AStar.execute
                 else LazyAvoidance.execute
 
             probable_survival = executor(this)
@@ -268,9 +277,16 @@ class Environment
                 @view.animateTo(nextpos.xpos, nextpos.ypos, Env.movementInterval)
 
     class LZWrapper
-        constructor: (@raphael, @firstTurn, @gridw=100, @gridh=60) ->
-            @xpos = Math.floor Math.random()*@gridw
-            @ypos = Math.floor Math.random()*@gridh
+        constructor: (@raphael, @firstTurn, @env, @gridw=100, @gridh=60) ->
+            half = LZ_TURNS_TO_EXPIRE/2
+            left = @env.ship.ship.xpos - half
+            right = @env.ship.ship.xpos + half
+            top = @env.ship.ship.ypos - half
+            bottom = @env.ship.ship.ypos + half
+            @xpos = _.random(Math.max(0, left), Math.min(@gridw-1, right))
+            @ypos = _.random(Math.max(0, top), Math.min(@gridh-1, bottom))
+            #@xpos = Math.floor Math.random()*@gridw
+            #@ypos = Math.floor Math.random()*@gridh
             @view = new VLZ(raphael, @firstTurn, @xpos, @ypos)
             @lz = new LandingZone(@xpos, @ypos, @firstTurn)
 
@@ -278,8 +294,15 @@ class Environment
             @lz.expired(turn)
 
         respawn: (turn) ->
-            @xpos = Math.floor Math.random()*@gridw
-            @ypos = Math.floor Math.random()*@gridh
+            half = LZ_TURNS_TO_EXPIRE/2
+            left = @env.ship.ship.xpos - half
+            right = @env.ship.ship.xpos + half
+            top = @env.ship.ship.ypos - half
+            bottom = @env.ship.ship.ypos + half
+            @xpos = _.random(Math.max(0, left), Math.min(@gridw-1, right))
+            @ypos = _.random(Math.max(0, top), Math.min(@gridh-1, bottom))
+            #@xpos = Math.floor Math.random()*@gridw
+            #@ypos = Math.floor Math.random()*@gridh
             @firstTurn = turn
             # Move LZ box to new position
             @view.setPos(@xpos, @ypos)

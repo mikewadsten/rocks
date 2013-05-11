@@ -74,28 +74,6 @@ class LazyAvoidance
         return true
 
 class BreadthFirst
-    @getNeighbors: (node, turnsahead, env) ->
-        ssp = env.ssp
-        if turnsahead >= ssp.depth
-            return [] # can't go deeper than we know of
-        {x, y} = node
-        xs = _.filter([x-1, x, x+1], (i) -> (0 <= i < env.gridWidth))
-        ys = _.filter([y-1, y, y+1], (i) -> (0 <= i < env.gridHeight))
-        results = []
-        # shuffle the 'moves' so that we don't always go up-left in the end...
-        for i in _.shuffle xs
-            for j in _.shuffle ys
-                # Because we don't want to be 'stupid' and be able to occupy the
-                # same space as an asteroid just before it moves, we'll exclude
-                # neighbors who aren't safe right now. This should keep it out of
-                # some stupid traps like two diagonal-moving asteroids next to each
-                # other, "sweeping out" a path and plowing the ship along with it.
-                if ssp.grids[turnsahead-1] and ssp.grids[turnsahead-1].isSafe(i, j) \
-                    and ssp.grids[turnsahead] and ssp.grids[turnsahead].isSafe(i,j) \
-                    and ssp.grids[turnsahead+1] and ssp.grids[turnsahead+1].isSafe(i, j)
-                        results.push (ssp.grids[turnsahead].getNodeAt(i, j))
-        return results
-
     # More accurately, modified depth-limited breath-first...
     @execute: (env) ->
         # Use predetermined flight plan if there is one
@@ -124,7 +102,7 @@ class BreadthFirst
         while openList.length
             node = openList.shift()
             # TODO: Handle checking for landing zone
-            neighbors = BreadthFirst.getNeighbors(node, (node.turn - startTurn + 1), env)
+            neighbors = env.ssp.getNeighbors(node, (node.turn - startTurn + 1))
             if node.turn > depthTurn or ((_.isEmpty neighbors) and (_.isEmpty openList))
                 # We've reached the end. Just trace back how to get here...
                 if node.turn > depthTurn
@@ -149,9 +127,96 @@ class BreadthFirst
                     n.parent = node
 
 class AStar
+    @heuristic: ({x, y}, {x: endx, y: endy}) ->
+        abs = Math.abs
+        # Heuristic: Manhattan distance.
+        return abs(x-endx) + abs(y - endy)
+
+    @euclid: ({x, y}, {x: endx, y: endy}) ->
+        dx = Math.abs(x-endx)
+        dy = Math.abs(y-endy)
+        return Math.sqrt(dx*dx + dy*dy)
+
+    @wallDistance: ({x, y}, env) ->
+        Math.min(x, y, Math.abs(env.gridWidth - x - 1), Math.abs(env.gridHeight - y - 1))
+
     # TODO: implement the shit out of this
     @execute: (env) ->
-        false
+        # Use predetermined flight plan if there is one
+        sh = env.ship
+        sh.view.view.attr {fill: "#fff"}
+        if sh.moveplan.length > 0
+            console.log "following moveplan..."
+            sh.move (sh.moveplan.shift())
+            return true
+
+        openList = new PriorityQueue()
+        startNode = env.ssp.grids[1].getNodeAt(env.ship.ship.xpos, env.ship.ship.ypos)
+        {xpos: lzx, ypos: lzy} = env.landingZone
+        lz = {x: lzx, y: lzy}
+        if env.landingZone.expired(env.turn + AStar.euclid(startNode, lz) + 2)
+            # The landing zone won't be there is roughly the time it will take to
+            # go straight there. Fall back to Lazy
+            console.log "LZ too far away, changing to lazy for now"
+            return LazyAvoidance.execute env
+        if AStar.wallDistance(lz, env) < AStar.euclid(startNode, lz)
+            # LZ is too close to the wall to be logically approached.
+            console.log "LZ too close to wall, switching to lazy for now"
+            return LazyAvoidance.execute env
+        for g in env.ssp.grids
+            g.unplanAll()
+
+        startNode.g = 0
+        startNode.f = 0
+
+        startTurn = env.turn
+
+        openList.put 0, startNode
+        startNode.opened = true
+
+        while not openList.empty()
+            node = openList.pop()
+            #console.log "AStar queue loop, found ", node
+            #node.closed = true
+
+            # See if we've found the Landing Zone, before it expires.
+            # We add an extra turn onto the search so we don't stop as soon as we hit the LZ.
+            if node.parent?
+                if AStar.heuristic(node.parent, lz) is 0
+                    if not env.landingZone.expired(node.parent.turn)
+                        # We've found the landing zone
+                        #moveplan = _.first(SearchSpace.tracePlan(node),
+                                            #(AStar.wallDistance(startNode, env)/2))
+                        moveplan = SearchSpace.tracePlan(node)
+                        console.log "Found the landing zone!"
+                        console.log moveplan
+                        sh.moveplan = moveplan
+                        sh.move (sh.moveplan.shift() or 0)
+                        return true
+
+            searchturn = node.turn - env.turn + 1
+            neighbors = env.ssp.getNeighbors(node, searchturn)
+            #console.log "neighbors", neighbors
+            for n in neighbors
+                ng = node.g + 1
+                # g-cost of nodes will never be found to be lower: the g-cost is its depth
+                # inside the search space, and there's no way to get there faster
+                # than (depth) turns
+                if (not n.opened)
+                    n.g = ng
+                    # Heuristic cost: Manhattan distance + inverse distance to wall
+                    n.h = n.h || (AStar.heuristic(n, lz) + 5*Math.floor(5/AStar.wallDistance(n, env)))
+                    n.f = n.g + n.h
+                    n.parent = node
+                    n.opened = true
+                    openList.put n.f, n
+            if not openList.sorted
+                openList.sort()
+
+        # We didn't find the Landing Zone. Fall back to MDLBFS
+        console.log "AStar failed. Falling back to BFS..."
+        return BreadthFirst.execute env
 
 window.LazyAvoidance = LazyAvoidance
 window.BreadthFirst = BreadthFirst
+window.AStar = AStar
