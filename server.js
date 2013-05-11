@@ -3,7 +3,42 @@ var restify = require('restify'),
     fs = require('fs'),
     sqlite = require('sqlite3').verbose();
 
-var server = restify.createServer();
+// Use custom JSON formatter so /stats output is pretty.
+// stackoverflow.com/q/10995601
+function jsonOut(req, res, body) {
+    if (!body) {
+        if (res.getHeader('Content-Length') === undefined &&
+                res.contentLength === undefined) {
+                    res.setHeader('Content-Length', 0);
+                }
+        return null;
+    }
+
+    if (body instanceof Error) {
+        // snoop for RestError or HttpError, but don't rely on instanceof
+        if ((body.restCode || body.httpCode) && body.body) {
+            body = body.body;
+        } else {
+            body = {
+                message: body.message
+            };
+        }
+    }
+
+    if (Buffer.isBuffer(body))
+        body = body.toString('base64');
+
+    var data = JSON.stringify(body, null, 2);
+
+    if (res.getHeader('Content-Length') === undefined &&
+            res.contentLength === undefined) {
+                res.setHeader('Content-Length', Buffer.byteLength(data));
+            }
+
+    return data;
+}
+
+var server = restify.createServer({formatters: {'application/json': jsonOut}});
 
 var db = new sqlite.Database('data.db');
 
@@ -55,8 +90,8 @@ server.get('/stats', function(req, res, next) {
             return next(err);
 
         if (rows.length) {
-            res.contentType = 'json';
-            res.send(JSON.stringify({stats: rows}))
+            res.json({stats: rows})
+            //res.send(JSON.stringify({stats: rows}))
         }
         else {
             res.json({"error": "result set is empty"});
