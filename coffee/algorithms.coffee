@@ -149,7 +149,6 @@ class AStar
     @wallDistance: ({x, y}, env) ->
         Math.min(x, y, Math.abs(env.gridWidth - x - 1), Math.abs(env.gridHeight - y - 1))
 
-    # TODO: implement the shit out of this
     @execute: (env) ->
         # Use predetermined flight plan if there is one
         sh = env.ship
